@@ -1,0 +1,1084 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Tactical Mission Log</title>
+  <meta name="theme-color" content="#08110b" />
+  <style>
+    :root{
+      --bg:#07110a;
+      --panel: rgba(10, 25, 15, .72);
+      --line: rgba(140, 255, 170, .18);
+      --line2: rgba(140, 255, 170, .10);
+      --text:#e7fff0;
+      --muted: rgba(231,255,240,.72);
+      --accent:#6dff9a;
+      --danger:#ff6d6d;
+      --warn:#ffd26d;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sys: -apple-system, system-ui, Segoe UI, Roboto, Arial;
+    }
+    * { box-sizing: border-box; }
+    body{
+      margin:0; color:var(--text); background:
+        radial-gradient(1200px 800px at 20% -10%, rgba(109,255,154,.16), transparent 60%),
+        radial-gradient(900px 700px at 110% 10%, rgba(109,255,154,.10), transparent 55%),
+        linear-gradient(180deg, #050b07, var(--bg));
+      font-family: var(--sys);
+      min-height: 100vh;
+    }
+    header{
+      position: sticky; top:0;
+      backdrop-filter: blur(10px);
+      background: rgba(5, 12, 7, .78);
+      border-bottom:1px solid var(--line);
+      padding: 14px 16px;
+      z-index: 5;
+    }
+    .title{
+      display:flex; align-items:baseline; justify-content:space-between; gap:10px;
+      font-weight:800; letter-spacing:.08em;
+      text-transform: uppercase;
+      font-family: var(--mono);
+      font-size: 16px;
+    }
+    .badge{
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--accent);
+      border: 1px solid var(--line);
+      padding: 4px 8px;
+      border-radius: 999px;
+      opacity: .92;
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+    .badge .v{
+      color: rgba(231,255,240,.85);
+      border: 1px dashed var(--line);
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+    }
+    main{ max-width: 980px; margin: 0 auto; padding: 16px; }
+    .card{
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+      margin: 12px 0;
+      box-shadow: 0 10px 40px rgba(0,0,0,.35);
+    }
+    .small{ font-size: 12px; color: var(--muted); }
+    .mono{ font-family: var(--mono); }
+    .gridline{ border-top:1px dashed var(--line2); margin: 12px 0; }
+    .tabs{
+      display:flex; gap:8px; flex-wrap:wrap;
+      margin-top: 10px;
+    }
+    .tab{
+      font-family: var(--mono);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      font-size: 12px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(10,25,15,.35);
+      color: var(--text);
+      cursor: pointer;
+    }
+    .tab.active{
+      background: rgba(109,255,154,.18);
+      border-color: rgba(109,255,154,.38);
+      color: var(--accent);
+    }
+    label{ display:block; margin: 10px 0 6px; color: var(--muted); font-size: 12px; font-family: var(--mono); letter-spacing:.04em; }
+    input, select, button, textarea{
+      width: 100%;
+      font-size: 15px;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(3, 8, 5, .68);
+      color: var(--text);
+      outline: none;
+    }
+    textarea{ min-height: 88px; resize: vertical; }
+    .row{ display:flex; gap: 10px; align-items: end; flex-wrap: wrap; }
+    .row > .col{ flex:1; min-width: 220px; }
+    button{
+      cursor:pointer;
+      font-family: var(--mono);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .btnRow{ display:flex; gap: 10px; flex-wrap: wrap; }
+    .btn{ width:auto; padding: 12px 14px; }
+    .btn.primary{ border-color: rgba(109,255,154,.42); background: rgba(109,255,154,.18); color: var(--accent); }
+    .btn.danger{ border-color: rgba(255,109,109,.38); background: rgba(255,109,109,.12); color: #ffbcbc; }
+    .btn.warn{ border-color: rgba(255,210,109,.35); background: rgba(255,210,109,.10); color: #ffe1a3; }
+    .pill{
+      display:inline-flex; gap:8px; align-items:center;
+      border:1px solid var(--line);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--accent);
+      background: rgba(109,255,154,.10);
+    }
+    .list{
+      border-top:1px solid var(--line2);
+      margin-top: 10px;
+    }
+    .item{
+      display:flex; justify-content:space-between; gap: 10px; align-items:center;
+      padding: 10px 0;
+      border-bottom:1px solid var(--line2);
+    }
+    .itemTitle{ font-weight:700; }
+    .itemMeta{ color: var(--muted); font-size: 12px; }
+    .hidden{ display:none !important; }
+    .kpi{
+      display:flex; gap:10px; flex-wrap:wrap; margin-top: 8px;
+    }
+    .kpi .cardMini{
+      border:1px solid var(--line);
+      border-radius: 14px;
+      padding: 10px 12px;
+      background: rgba(3,8,5,.55);
+      min-width: 200px;
+    }
+    .cardMini .val{ font-family: var(--mono); font-size: 18px; color: var(--accent); }
+    .cardMini .lbl{ font-size: 12px; color: var(--muted); font-family: var(--mono); letter-spacing:.04em; }
+    .notice{
+      border-left: 3px solid rgba(109,255,154,.6);
+      padding: 10px 12px;
+      background: rgba(109,255,154,.08);
+      border-radius: 12px;
+      margin-top: 10px;
+      color: var(--muted);
+    }
+    .err{ color: #ffbcbc; font-size: 12px; margin-top: 8px; }
+  </style>
+</head>
+
+<body>
+<header>
+  <div class="title">
+    <span>TACTICAL MISSION LOG</span>
+    <span class="badge">
+      <span>OFFLINE • ENCRYPTED</span>
+      <span class="v" id="verBadge">v0.0.0</span>
+    </span>
+  </div>
+  <div class="tabs" id="tabs"></div>
+</header>
+
+<main>
+  <!-- Setup / Unlock -->
+  <div id="setupCard" class="card hidden">
+    <div class="mono" style="font-weight:800; letter-spacing:.08em;">VAULT INITIALIZATION</div>
+    <div class="small" style="margin-top:8px;">Create a password/PIN to encrypt your data on this device. If you forget it, the data cannot be recovered.</div>
+    <div class="gridline"></div>
+    <label>New password / PIN</label>
+    <input id="newPass" type="password" placeholder="Min 4 characters" />
+    <label>Confirm</label>
+    <input id="newPass2" type="password" placeholder="Repeat password / PIN" />
+    <div class="btnRow" style="margin-top:12px;">
+      <button class="btn primary" id="createBtn">CREATE VAULT</button>
+    </div>
+  </div>
+
+  <div id="unlockCard" class="card hidden">
+    <div class="mono" style="font-weight:800; letter-spacing:.08em;">VAULT LOCKED</div>
+    <div class="small" style="margin-top:8px;">Enter your password/PIN to decrypt local data.</div>
+    <div class="gridline"></div>
+    <label>Password / PIN</label>
+    <input id="pass" type="password" placeholder="••••" />
+    <div class="btnRow" style="margin-top:12px;">
+      <button class="btn primary" id="unlockBtn">UNLOCK</button>
+    </div>
+    <div id="unlockErr" class="err"></div>
+  </div>
+
+  <!-- App -->
+  <div id="appRoot" class="hidden">
+    <div class="card">
+      <div class="mono" style="font-weight:800; letter-spacing:.08em;">STATUS</div>
+      <div class="kpi">
+        <div class="cardMini">
+          <div class="val" id="kpiMissions">0</div>
+          <div class="lbl">MISSIONS LOGGED</div>
+        </div>
+        <div class="cardMini">
+          <div class="val" id="kpiCrew">0</div>
+          <div class="lbl">CREW MEMBERS</div>
+        </div>
+        <div class="cardMini">
+          <div class="val" id="kpiTypes">0</div>
+          <div class="lbl">WEAPON TYPES</div>
+        </div>
+      </div>
+      <div class="notice small">
+        Tip (Windows): Edge → Menu → Apps → “Install this site as an app” (requires https or localhost).<br/>
+        Tip (iPhone): Safari Share → “Add to Home Screen”.
+      </div>
+    </div>
+
+    <!-- MISSIONS -->
+    <div id="view_missions" class="card hidden">
+      <div class="mono" style="font-weight:800; letter-spacing:.08em;">MISSION ENTRY</div>
+      <div class="gridline"></div>
+
+      <div class="row">
+        <div class="col">
+          <label>Mission date/time</label>
+          <input id="missionDT" type="datetime-local" />
+        </div>
+
+        <!-- Tail number -->
+        <div class="col">
+          <label>Tail number</label>
+          <input id="tailNumber" placeholder="e.g., UAE-901 / AKINCI-02" />
+        </div>
+
+        <div class="col">
+          <label>Pilot</label>
+          <select id="pilotSel"></select>
+        </div>
+        <div class="col">
+          <label>Mission Commander</label>
+          <select id="mcSel"></select>
+        </div>
+        <div class="col">
+          <label>Co-Pilot (optional)</label>
+          <select id="copilotSel"></select>
+        </div>
+      </div>
+
+      <label>Notes (optional)</label>
+      <textarea id="missionNotes" placeholder="Brief tactical notes…"></textarea>
+
+      <div class="gridline"></div>
+      <div class="mono" style="font-weight:800; letter-spacing:.08em;">RELEASED WEAPONS</div>
+      <div class="small">Add one or more release events to the mission (type + quantity + state + operating crew).</div>
+
+      <div class="row" style="margin-top:10px;">
+        <div class="col">
+          <label>Weapon type</label>
+          <select id="relTypeSel"></select>
+        </div>
+        <div class="col">
+          <label>Quantity</label>
+          <input id="relQty" type="number" min="1" value="1" />
+        </div>
+        <div class="col">
+          <label>Weapon state</label>
+          <select id="relState">
+            <option value="Hit">Hit</option>
+            <option value="Miss">Miss</option>
+            <option value="Dud">Dud</option>
+          </select>
+        </div>
+        <div class="col">
+          <label>Operator: Pilot</label>
+          <select id="relPilotSel"></select>
+        </div>
+        <div class="col">
+          <label>Operator: Mission Commander</label>
+          <select id="relMcSel"></select>
+        </div>
+        <div class="col">
+          <label>Operator: Sensor Operator</label>
+          <select id="relSensorSel"></select>
+        </div>
+      </div>
+
+      <div class="btnRow" style="margin-top:12px;">
+        <button class="btn warn" id="addReleaseBtn">ADD RELEASE</button>
+      </div>
+
+      <div id="releaseList" class="list"></div>
+
+      <div class="btnRow" style="margin-top:12px;">
+        <button class="btn primary" id="saveMissionBtn">SAVE MISSION</button>
+        <button class="btn danger" id="clearMissionBtn">CLEAR FORM</button>
+      </div>
+
+      <div class="gridline"></div>
+      <div class="mono" style="font-weight:800; letter-spacing:.08em;">MISSION LOG</div>
+      <div id="missionLog" class="list"></div>
+    </div>
+
+    <!-- CREW -->
+    <div id="view_crew" class="card hidden">
+      <div class="mono" style="font-weight:800; letter-spacing:.08em;">CREW ROSTER</div>
+      <div class="small">Add/remove crew members. Roles control which dropdowns they appear in.</div>
+      <div class="gridline"></div>
+
+      <div class="row">
+        <div class="col">
+          <label>Name / Callsign</label>
+          <input id="crewName" placeholder="e.g., CAPT HZ3I / EAGLE-1" />
+        </div>
+        <div class="col">
+          <label>Role tag</label>
+          <select id="crewRoleTag">
+            <option value="">(choose role)</option>
+            <option value="Pilot">Pilot</option>
+            <option value="Mission Commander">Mission Commander</option>
+            <option value="Co-Pilot">Co-Pilot</option>
+            <option value="Sensor Operator">Sensor Operator</option>
+          </select>
+        </div>
+        <div class="col" style="min-width: 140px;">
+          <button class="btn primary" id="addCrewBtn">ADD CREW</button>
+        </div>
+      </div>
+
+      <div id="crewList" class="list"></div>
+    </div>
+
+    <!-- WEAPON TYPES -->
+    <div id="view_types" class="card hidden">
+      <div class="mono" style="font-weight:800; letter-spacing:.08em;">WEAPON TYPES</div>
+      <div class="small">Add/remove bomb/missile types used in missions and inventory.</div>
+      <div class="gridline"></div>
+
+      <div class="row">
+        <div class="col">
+          <label>Type name</label>
+          <input id="typeName" placeholder="e.g., AGM-114 / GBU-12 / MAM-L" />
+        </div>
+        <div class="col">
+          <label>Category</label>
+          <select id="typeCat">
+            <option value="Missile">Missile</option>
+            <option value="Bomb">Bomb</option>
+            <option value="Rocket">Rocket</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="col" style="min-width: 140px;">
+          <button class="btn primary" id="addTypeBtn">ADD TYPE</button>
+        </div>
+      </div>
+
+      <div id="typeList" class="list"></div>
+    </div>
+
+    <!-- INVENTORY -->
+    <div id="view_inventory" class="card hidden">
+      <div class="mono" style="font-weight:800; letter-spacing:.08em;">INVENTORY</div>
+      <div class="small">Set stock levels per weapon type (fully offline). Releases can optionally reduce inventory.</div>
+      <div class="gridline"></div>
+
+      <div class="row">
+        <div class="col">
+          <label>Weapon type</label>
+          <select id="invTypeSel"></select>
+        </div>
+        <div class="col">
+          <label>Set quantity</label>
+          <input id="invQty" type="number" min="0" value="0" />
+        </div>
+        <div class="col" style="min-width: 180px;">
+          <button class="btn primary" id="setInvBtn">SET INVENTORY</button>
+        </div>
+      </div>
+
+      <label style="margin-top:14px;">Auto-decrement inventory when saving mission</label>
+      <select id="autoDecr">
+        <option value="on">ON (recommended)</option>
+        <option value="off">OFF</option>
+      </select>
+
+      <div id="invList" class="list"></div>
+    </div>
+
+    <!-- EXPORT -->
+    <div id="view_export" class="card hidden">
+      <div class="mono" style="font-weight:800; letter-spacing:.08em;">EXPORT & BACKUP</div>
+      <div class="small">Excel export is CSV (opens in Excel). Backup is encrypted JSON.</div>
+      <div class="gridline"></div>
+
+      <div class="btnRow">
+        <button class="btn primary" id="exportMissionsBtn">EXPORT MISSIONS (CSV)</button>
+        <button class="btn primary" id="exportInventoryBtn">EXPORT INVENTORY (CSV)</button>
+        <button class="btn warn" id="exportEncryptedBtn">EXPORT ENCRYPTED BACKUP</button>
+      </div>
+
+      <div class="gridline"></div>
+      <div class="mono" style="font-weight:800; letter-spacing:.08em;">LOCK</div>
+      <div class="btnRow" style="margin-top:10px;">
+        <button class="btn danger" id="lockBtn">LOCK VAULT</button>
+      </div>
+
+      <div class="gridline"></div>
+      <div class="mono" style="font-weight:800; letter-spacing:.08em;">DANGER ZONE</div>
+      <div class="small">This wipes all local data (cannot be undone).</div>
+      <div class="btnRow" style="margin-top:10px;">
+        <button class="btn danger" id="wipeBtn">WIPE DEVICE DATA</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+/* =========================
+   App Version
+   ========================= */
+const APP_VERSION = "1.2.0";
+document.getElementById("verBadge").textContent = "v" + APP_VERSION;
+
+/* =========================
+   Encrypted Offline Vault
+   ========================= */
+const META_KEY = "tml_vault_meta_v1";
+const DATA_KEY = "tml_vault_data_v1";
+const enc = new TextEncoder();
+const dec = new TextDecoder();
+
+function b64(bytes){ return btoa(String.fromCharCode(...new Uint8Array(bytes))); }
+function unb64(str){
+  const bin = atob(str);
+  const bytes = new Uint8Array(bin.length);
+  for (let i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+async function deriveKey(password, saltBytes, iterations){
+  const baseKey = await crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey(
+    { name:"PBKDF2", salt:saltBytes, iterations, hash:"SHA-256" },
+    baseKey,
+    { name:"AES-GCM", length:256 },
+    false,
+    ["encrypt","decrypt"]
+  );
+}
+async function encryptJson(key, obj){
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const plaintext = enc.encode(JSON.stringify(obj));
+  const ciphertext = await crypto.subtle.encrypt({ name:"AES-GCM", iv }, key, plaintext);
+  return { iv: b64(iv), ct: b64(ciphertext) };
+}
+async function decryptJson(key, payload){
+  const iv = unb64(payload.iv);
+  const ct = unb64(payload.ct);
+  const plaintext = await crypto.subtle.decrypt({ name:"AES-GCM", iv }, key, ct);
+  return JSON.parse(dec.decode(plaintext));
+}
+function getMeta(){ const raw = localStorage.getItem(META_KEY); return raw ? JSON.parse(raw) : null; }
+function setMeta(meta){ localStorage.setItem(META_KEY, JSON.stringify(meta)); }
+function getEncryptedData(){ const raw = localStorage.getItem(DATA_KEY); return raw ? JSON.parse(raw) : null; }
+function setEncryptedData(payload){ localStorage.setItem(DATA_KEY, JSON.stringify(payload)); }
+
+let vaultKey = null;
+
+/* =========================
+   Data Model
+   ========================= */
+function uid(){ return Math.random().toString(16).slice(2) + Date.now().toString(16); }
+
+let state = {
+  crew: [],         // {id,name,tag}
+  types: [],        // {id,name,cat}
+  inventory: {},    // typeId -> qty
+  missions: [],     // {id, dtISO, tailNumber, pilotId, mcId, copilotId, notes, releases:[...]}
+  settings: { autoDecr: "on" }
+};
+
+async function persist(){
+  if (!vaultKey) return;
+  const payload = await encryptJson(vaultKey, state);
+  setEncryptedData(payload);
+}
+
+async function createVault(password){
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const iterations = 250000;
+  setMeta({ salt: b64(salt), iterations });
+  vaultKey = await deriveKey(password, salt, iterations);
+  state = { crew:[], types:[], inventory:{}, missions:[], settings:{ autoDecr:"on" } };
+  await persist();
+}
+
+async function unlock(password){
+  const meta = getMeta();
+  const key = await deriveKey(password, unb64(meta.salt), meta.iterations);
+  const encData = getEncryptedData();
+  const data = encData ? await decryptJson(key, encData) : { crew:[], types:[], inventory:{}, missions:[], settings:{ autoDecr:"on" } };
+  return { key, data };
+}
+
+/* =========================
+   UI Helpers
+   ========================= */
+const $ = (id)=>document.getElementById(id);
+function show(el, on=true){ el.classList.toggle("hidden", !on); }
+function esc(s){
+  return String(s ?? "").replace(/[&<>"']/g, ch => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[ch]));
+}
+function fmtDT(iso){
+  try { return new Date(iso).toLocaleString(); } catch { return iso; }
+}
+function nameById(arr, id){
+  const x = arr.find(o=>o.id===id);
+  return x ? x.name : "(unset)";
+}
+
+/* =========================
+   Tabs / Views
+   ========================= */
+const TABS = [
+  { id:"missions",  label:"Missions" },
+  { id:"crew",      label:"Crew" },
+  { id:"types",     label:"Weapon Types" },
+  { id:"inventory", label:"Inventory" },
+  { id:"export",    label:"Export" }
+];
+
+let activeTab = "missions";
+
+function renderTabs(){
+  const root = $("tabs");
+  root.innerHTML = "";
+  for (const t of TABS){
+    const b = document.createElement("button");
+    b.className = "tab" + (activeTab===t.id ? " active":"");
+    b.textContent = t.label;
+    b.onclick = ()=>{ activeTab = t.id; renderAll(); };
+    root.appendChild(b);
+  }
+}
+
+function renderKPIs(){
+  $("kpiMissions").textContent = String(state.missions.length);
+  $("kpiCrew").textContent = String(state.crew.length);
+  $("kpiTypes").textContent = String(state.types.length);
+}
+
+/* =========================
+   Dropdowns (FILTERED BY ROLE ONLY)
+   ========================= */
+function fillCrewSelectByRole(selEl, roleTag, allowBlank=true, blankLabel="(select)"){
+  selEl.innerHTML = "";
+  if (allowBlank){
+    const o = document.createElement("option");
+    o.value = "";
+    o.textContent = blankLabel;
+    selEl.appendChild(o);
+  }
+  for (const c of state.crew.filter(x => (x.tag||"").trim() === roleTag)){
+    const o = document.createElement("option");
+    o.value = c.id;
+    o.textContent = c.name;
+    selEl.appendChild(o);
+  }
+}
+
+function fillTypeSelect(selEl, allowBlank=true){
+  selEl.innerHTML = "";
+  if (allowBlank){
+    const o = document.createElement("option");
+    o.value = "";
+    o.textContent = "(select)";
+    selEl.appendChild(o);
+  }
+  for (const t of state.types){
+    const o = document.createElement("option");
+    o.value = t.id;
+    o.textContent = `${t.cat}: ${t.name}`;
+    selEl.appendChild(o);
+  }
+}
+
+/* =========================
+   Missions Form State
+   ========================= */
+let missionDraftReleases = [];
+
+function clearMissionForm(){
+  $("missionDT").value = "";
+  $("tailNumber").value = "";
+  $("pilotSel").value = "";
+  $("mcSel").value = "";
+  $("copilotSel").value = "";
+  $("missionNotes").value = "";
+  missionDraftReleases = [];
+  $("relQty").value = 1;
+  $("relState").value = "Hit";
+  renderReleaseDraft();
+}
+
+function renderReleaseDraft(){
+  const list = $("releaseList");
+  list.innerHTML = "";
+  if (!missionDraftReleases.length){
+    const d = document.createElement("div");
+    d.className = "item";
+    d.innerHTML = `<div><div class="itemTitle mono">NO RELEASES ADDED</div><div class="itemMeta">Add release events above if applicable.</div></div>`;
+    list.appendChild(d);
+    return;
+  }
+  for (const r of missionDraftReleases){
+    const t = state.types.find(x=>x.id===r.typeId);
+    const row = document.createElement("div");
+    row.className = "item";
+    row.innerHTML = `
+      <div>
+        <div class="itemTitle">
+          ${esc(t ? `${t.cat}: ${t.name}` : "(type missing)")}
+          <span class="pill">QTY ${r.qty}</span>
+          <span class="pill">${esc(r.state || "Hit")}</span>
+        </div>
+        <div class="itemMeta">Ops: Pilot=${esc(nameById(state.crew, r.opPilotId))} • MC=${esc(nameById(state.crew, r.opMcId))} • Sensor=${esc(nameById(state.crew, r.opSensorId))}</div>
+      </div>
+    `;
+    const actions = document.createElement("div");
+    actions.className = "btnRow";
+    const del = document.createElement("button");
+    del.className = "btn danger";
+    del.textContent = "REMOVE";
+    del.onclick = ()=>{
+      missionDraftReleases = missionDraftReleases.filter(x=>x.id!==r.id);
+      renderReleaseDraft();
+    };
+    actions.appendChild(del);
+    row.appendChild(actions);
+    list.appendChild(row);
+  }
+}
+
+function renderMissionLog(){
+  const log = $("missionLog");
+  log.innerHTML = "";
+  if (!state.missions.length){
+    const d = document.createElement("div");
+    d.className = "item";
+    d.innerHTML = `<div><div class="itemTitle mono">NO MISSIONS LOGGED</div><div class="itemMeta">Add your first mission above.</div></div>`;
+    log.appendChild(d);
+    return;
+  }
+
+  for (const m of state.missions){
+    const relCount = m.releases?.reduce((a,x)=>a+(Number(x.qty)||0),0) || 0;
+    const hits = m.releases?.filter(r => r.state === "Hit").length || 0;
+    const misses = m.releases?.filter(r => r.state === "Miss").length || 0;
+    const duds = m.releases?.filter(r => r.state === "Dud").length || 0;
+
+    const row = document.createElement("div");
+    row.className = "item";
+    row.innerHTML = `
+      <div>
+        <div class="itemTitle">
+          ${esc(fmtDT(m.dtISO))}
+          <span class="pill">TAIL ${esc(m.tailNumber || "-")}</span>
+          <span class="pill">REL ${relCount}</span>
+          <span class="pill">H ${hits}</span>
+          <span class="pill">M ${misses}</span>
+          <span class="pill">D ${duds}</span>
+        </div>
+        <div class="itemMeta">Pilot=${esc(nameById(state.crew, m.pilotId))} • MC=${esc(nameById(state.crew, m.mcId))} • Co=${esc(nameById(state.crew, m.copilotId))}</div>
+        ${m.notes ? `<div class="itemMeta">Notes: ${esc(m.notes)}</div>` : ``}
+      </div>
+    `;
+    const actions = document.createElement("div");
+    actions.className = "btnRow";
+    const del = document.createElement("button");
+    del.className = "btn danger";
+    del.textContent = "DELETE";
+    del.onclick = async ()=>{
+      state.missions = state.missions.filter(x=>x.id!==m.id);
+      await persist();
+      renderAll();
+    };
+    actions.appendChild(del);
+    row.appendChild(actions);
+    log.appendChild(row);
+  }
+}
+
+/* =========================
+   Crew / Types / Inventory
+   ========================= */
+function renderCrewList(){
+  const root = $("crewList");
+  root.innerHTML = "";
+  if (!state.crew.length){
+    root.innerHTML = `<div class="item"><div><div class="itemTitle mono">NO CREW</div><div class="itemMeta">Add crew members above.</div></div></div>`;
+    return;
+  }
+  for (const c of state.crew){
+    const row = document.createElement("div");
+    row.className = "item";
+    row.innerHTML = `
+      <div>
+        <div class="itemTitle">${esc(c.name)} ${c.tag ? `<span class="pill">${esc(c.tag)}</span>` : ""}</div>
+        <div class="itemMeta mono">ID ${esc(c.id.slice(-8))}</div>
+      </div>
+    `;
+    const actions = document.createElement("div");
+    actions.className = "btnRow";
+    const del = document.createElement("button");
+    del.className = "btn danger";
+    del.textContent = "REMOVE";
+    del.onclick = async ()=>{
+      state.crew = state.crew.filter(x=>x.id!==c.id);
+      for (const m of state.missions){
+        if (m.pilotId===c.id) m.pilotId="";
+        if (m.mcId===c.id) m.mcId="";
+        if (m.copilotId===c.id) m.copilotId="";
+        for (const r of (m.releases||[])){
+          if (r.opPilotId===c.id) r.opPilotId="";
+          if (r.opMcId===c.id) r.opMcId="";
+          if (r.opSensorId===c.id) r.opSensorId="";
+        }
+      }
+      await persist();
+      renderAll();
+    };
+    actions.appendChild(del);
+    row.appendChild(actions);
+    root.appendChild(row);
+  }
+}
+
+function renderTypeList(){
+  const root = $("typeList");
+  root.innerHTML = "";
+  if (!state.types.length){
+    root.innerHTML = `<div class="item"><div><div class="itemTitle mono">NO WEAPON TYPES</div><div class="itemMeta">Add types above (bomb/missile/etc).</div></div></div>`;
+    return;
+  }
+  for (const t of state.types){
+    const inv = Number(state.inventory[t.id] ?? 0);
+    const row = document.createElement("div");
+    row.className = "item";
+    row.innerHTML = `
+      <div>
+        <div class="itemTitle">${esc(t.cat)}: ${esc(t.name)} <span class="pill">STOCK ${inv}</span></div>
+        <div class="itemMeta mono">ID ${esc(t.id.slice(-8))}</div>
+      </div>
+    `;
+    const actions = document.createElement("div");
+    actions.className = "btnRow";
+    const del = document.createElement("button");
+    del.className = "btn danger";
+    del.textContent = "REMOVE";
+    del.onclick = async ()=>{
+      state.types = state.types.filter(x=>x.id!==t.id);
+      delete state.inventory[t.id];
+      for (const m of state.missions){
+        m.releases = (m.releases||[]).filter(r=>r.typeId!==t.id);
+      }
+      await persist();
+      renderAll();
+    };
+    actions.appendChild(del);
+    row.appendChild(actions);
+    root.appendChild(row);
+  }
+}
+
+function renderInventoryList(){
+  const root = $("invList");
+  root.innerHTML = "";
+  if (!state.types.length){
+    root.innerHTML = `<div class="item"><div><div class="itemTitle mono">NO TYPES</div><div class="itemMeta">Add weapon types first.</div></div></div>`;
+    return;
+  }
+  for (const t of state.types){
+    const qty = Number(state.inventory[t.id] ?? 0);
+    const row = document.createElement("div");
+    row.className = "item";
+    row.innerHTML = `
+      <div>
+        <div class="itemTitle">${esc(t.cat)}: ${esc(t.name)}</div>
+        <div class="itemMeta">Current stock: <span class="mono" style="color:var(--accent); font-weight:800;">${qty}</span></div>
+      </div>
+    `;
+    root.appendChild(row);
+  }
+  $("autoDecr").value = state.settings.autoDecr || "on";
+}
+
+/* =========================
+   CSV Export (Excel)
+   ========================= */
+function csvEscape(v){
+  const s = String(v ?? "");
+  if (/[,"\n]/.test(s)) return `"${s.replace(/"/g,'""')}"`;
+  return s;
+}
+
+function downloadText(filename, text, mime="text/plain"){
+  const blob = new Blob([text], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportMissionsCSV(){
+  const headers = [
+    "MissionID","MissionDateTime","TailNumber","Pilot","MissionCommander","CoPilot","Notes",
+    "ReleaseID","WeaponCategory","WeaponType","Quantity","WeaponState","OpPilot","OpMissionCommander","OpSensorOperator"
+  ];
+  let lines = [headers.map(csvEscape).join(",")];
+
+  for (const m of state.missions){
+    const base = {
+      MissionID: m.id,
+      MissionDateTime: m.dtISO,
+      TailNumber: m.tailNumber || "",
+      Pilot: nameById(state.crew, m.pilotId),
+      MissionCommander: nameById(state.crew, m.mcId),
+      CoPilot: nameById(state.crew, m.copilotId),
+      Notes: m.notes || ""
+    };
+
+    const rels = (m.releases && m.releases.length) ? m.releases : [null];
+    for (const r of rels){
+      const t = r ? state.types.find(x=>x.id===r.typeId) : null;
+      const row = [
+        base.MissionID, base.MissionDateTime, base.TailNumber, base.Pilot, base.MissionCommander, base.CoPilot, base.Notes,
+        r ? r.id : "",
+        t ? t.cat : "",
+        t ? t.name : "",
+        r ? r.qty : "",
+        r ? (r.state || "") : "",
+        r ? nameById(state.crew, r.opPilotId) : "",
+        r ? nameById(state.crew, r.opMcId) : "",
+        r ? nameById(state.crew, r.opSensorId) : ""
+      ];
+      lines.push(row.map(csvEscape).join(","));
+    }
+  }
+
+  downloadText("missions.csv", lines.join("\n"), "text/csv");
+}
+
+function exportInventoryCSV(){
+  const headers = ["WeaponTypeID","WeaponCategory","WeaponType","Stock"];
+  let lines = [headers.map(csvEscape).join(",")];
+  for (const t of state.types){
+    lines.push([t.id, t.cat, t.name, Number(state.inventory[t.id] ?? 0)].map(csvEscape).join(","));
+  }
+  downloadText("inventory.csv", lines.join("\n"), "text/csv");
+}
+
+function exportEncryptedBackup(){
+  const meta = getMeta();
+  const data = getEncryptedData();
+  downloadText("tactical-mission-log.encrypted.json", JSON.stringify({ meta, data }, null, 2), "application/json");
+}
+
+/* =========================
+   Render All
+   ========================= */
+function renderViews(){
+  for (const t of TABS){
+    show(document.getElementById(`view_${t.id}`), activeTab===t.id);
+  }
+}
+
+function renderDropdowns(){
+  // Role-filtered selectors
+  fillCrewSelectByRole($("pilotSel"), "Pilot", true, "(select pilot)");
+  fillCrewSelectByRole($("mcSel"), "Mission Commander", true, "(select MC)");
+  fillCrewSelectByRole($("copilotSel"), "Co-Pilot", true, "(none)");
+
+  fillTypeSelect($("relTypeSel"), true);
+  fillCrewSelectByRole($("relPilotSel"), "Pilot", true, "(pilot)");
+  fillCrewSelectByRole($("relMcSel"), "Mission Commander", true, "(MC)");
+  fillCrewSelectByRole($("relSensorSel"), "Sensor Operator", true, "(sensor)");
+
+  fillTypeSelect($("invTypeSel"), true);
+}
+
+function renderAll(){
+  renderTabs();
+  renderViews();
+  renderKPIs();
+  renderDropdowns();
+  renderReleaseDraft();
+  renderMissionLog();
+  renderCrewList();
+  renderTypeList();
+  renderInventoryList();
+}
+
+/* =========================
+   App Actions
+   ========================= */
+document.getElementById("addCrewBtn").onclick = async ()=>{
+  const name = $("crewName").value.trim();
+  const tag = $("crewRoleTag").value;
+  if (!name) return alert("Enter crew name/callsign.");
+  if (!tag) return alert("Select a role tag (Pilot/MC/Co-Pilot/Sensor).");
+  state.crew.unshift({ id: uid(), name, tag });
+  $("crewName").value = "";
+  $("crewRoleTag").value = "";
+  await persist();
+  renderAll();
+};
+
+document.getElementById("addTypeBtn").onclick = async ()=>{
+  const name = $("typeName").value.trim();
+  const cat = $("typeCat").value;
+  if (!name) return alert("Enter weapon type name.");
+  state.types.unshift({ id: uid(), name, cat });
+  $("typeName").value = "";
+  $("typeCat").value = "Missile";
+  await persist();
+  renderAll();
+};
+
+document.getElementById("setInvBtn").onclick = async ()=>{
+  const typeId = $("invTypeSel").value;
+  const qty = Math.max(0, Number($("invQty").value || 0));
+  if (!typeId) return alert("Select weapon type.");
+  state.inventory[typeId] = qty;
+  await persist();
+  renderAll();
+};
+
+document.getElementById("autoDecr").onchange = async ()=>{
+  state.settings.autoDecr = $("autoDecr").value;
+  await persist();
+};
+
+document.getElementById("addReleaseBtn").onclick = ()=>{
+  const typeId = $("relTypeSel").value;
+  const qty = Math.max(1, Number($("relQty").value || 1));
+  const stateVal = $("relState").value || "Hit";
+  const opPilotId = $("relPilotSel").value;
+  const opMcId = $("relMcSel").value;
+  const opSensorId = $("relSensorSel").value;
+
+  if (!typeId) return alert("Select weapon type.");
+  if (!opPilotId && !opMcId && !opSensorId) return alert("Select at least one operator (pilot/mc/sensor).");
+
+  missionDraftReleases.unshift({ id: uid(), typeId, qty, state: stateVal, opPilotId, opMcId, opSensorId });
+  renderReleaseDraft();
+};
+
+document.getElementById("saveMissionBtn").onclick = async ()=>{
+  const dt = $("missionDT").value;
+  const tailNumber = $("tailNumber").value.trim();
+  const pilotId = $("pilotSel").value;
+  const mcId = $("mcSel").value;
+  const copilotId = $("copilotSel").value;
+  const notes = $("missionNotes").value.trim();
+
+  if (!dt) return alert("Set mission date/time.");
+  if (!tailNumber) return alert("Enter tail number.");
+  if (!pilotId) return alert("Select Pilot.");
+  if (!mcId) return alert("Select Mission Commander.");
+
+  const dtISO = new Date(dt).toISOString();
+
+  if ((state.settings.autoDecr || "on") === "on"){
+    for (const r of missionDraftReleases){
+      const cur = Number(state.inventory[r.typeId] ?? 0);
+      state.inventory[r.typeId] = Math.max(0, cur - Number(r.qty||0));
+    }
+  }
+
+  state.missions.unshift({
+    id: uid(),
+    dtISO,
+    tailNumber,
+    pilotId,
+    mcId,
+    copilotId,
+    notes,
+    releases: missionDraftReleases
+  });
+
+  await persist();
+  clearMissionForm();
+  renderAll();
+};
+
+document.getElementById("clearMissionBtn").onclick = ()=>{ clearMissionForm(); };
+
+document.getElementById("exportMissionsBtn").onclick = exportMissionsCSV;
+document.getElementById("exportInventoryBtn").onclick = exportInventoryCSV;
+document.getElementById("exportEncryptedBtn").onclick = exportEncryptedBackup;
+
+document.getElementById("lockBtn").onclick = ()=>{
+  vaultKey = null;
+  show(document.getElementById("appRoot"), false);
+  show(document.getElementById("unlockCard"), true);
+};
+
+document.getElementById("wipeBtn").onclick = ()=>{
+  const ok = confirm("WIPE ALL DEVICE DATA? This cannot be undone.");
+  if (!ok) return;
+  localStorage.removeItem(META_KEY);
+  localStorage.removeItem(DATA_KEY);
+  location.reload();
+};
+
+/* =========================
+   Boot: Setup / Unlock
+   ========================= */
+function bootMode(){
+  const meta = getMeta();
+  show(document.getElementById("setupCard"), !meta);
+  show(document.getElementById("unlockCard"), !!meta);
+  show(document.getElementById("appRoot"), false);
+  renderTabs();
+}
+
+document.getElementById("createBtn").onclick = async ()=>{
+  const p1 = $("newPass").value;
+  const p2 = $("newPass2").value;
+  if (!p1 || p1.length < 4) return alert("Use at least 4 characters.");
+  if (p1 !== p2) return alert("Passwords do not match.");
+  await createVault(p1);
+  $("newPass").value = "";
+  $("newPass2").value = "";
+  show(document.getElementById("setupCard"), false);
+  show(document.getElementById("unlockCard"), false);
+  show(document.getElementById("appRoot"), true);
+
+  $("missionDT").value = new Date(Date.now() - new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);
+  renderAll();
+};
+
+document.getElementById("unlockBtn").onclick = async ()=>{
+  $("unlockErr").textContent = "";
+  const pw = $("pass").value;
+  try{
+    const res = await unlock(pw);
+    vaultKey = res.key;
+    state = res.data;
+    $("pass").value = "";
+    show(document.getElementById("unlockCard"), false);
+    show(document.getElementById("setupCard"), false);
+    show(document.getElementById("appRoot"), true);
+
+    if (!$("missionDT").value){
+      $("missionDT").value = new Date(Date.now() - new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);
+    }
+    renderAll();
+  }catch(e){
+    $("unlockErr").textContent = "Wrong password (or vault corrupted).";
+  }
+};
+
+bootMode();
+</script>
+</body>
+</html>
