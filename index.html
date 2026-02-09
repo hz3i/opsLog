@@ -1,6 +1,9 @@
 <!doctype html>
 <html lang="en">
 <head>
+  <link rel="manifest" href="./manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Tactical Mission Log</title>
@@ -167,7 +170,14 @@
     .err{ color: #ffbcbc; font-size: 12px; margin-top: 8px; }
   </style>
 </head>
-
+<script>
+  // Register Service Worker for offline
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("./sw.js").catch(console.error);
+    });
+  }
+</script>
 <body>
 <header>
   <div class="title">
@@ -434,7 +444,7 @@
 /* =========================
    App Version
    ========================= */
-const APP_VERSION = "1.2.0";
+const APP_VERSION = "1.2.1";
 document.getElementById("verBadge").textContent = "v" + APP_VERSION;
 
 /* =========================
