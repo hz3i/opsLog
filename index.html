@@ -420,7 +420,7 @@
       <div class="gridline"></div>
 
       <div class="btnRow">
-        <button class="btn primary" id="exportMissionsBtn">EXPORT MISSIONS (CSV)</button>
+        <button class="btn primary" id="exportMissionsBtn">EXPORT MISSIONS (XLSX)</button>
         <button class="btn primary" id="exportInventoryBtn">EXPORT INVENTORY (CSV)</button>
         <button class="btn warn" id="exportEncryptedBtn">EXPORT ENCRYPTED BACKUP</button>
       </div>
@@ -839,43 +839,93 @@ function downloadText(filename, text, mime="text/plain"){
   URL.revokeObjectURL(url);
 }
 
-function exportMissionsCSV(){
-  const headers = [
-    "MissionID","MissionDateTime","TailNumber","Pilot","MissionCommander","CoPilot","Notes",
-    "ReleaseID","WeaponCategory","WeaponType","Quantity","WeaponState","OpPilot","OpMissionCommander","OpSensorOperator"
-  ];
-  let lines = [headers.map(csvEscape).join(",")];
+function exportMissionsXLSX(){
+  if (!window.XLSX) return alert("SheetJS not loaded. Make sure ./xlsx.full.min.js exists.");
 
-  for (const m of state.missions){
-    const base = {
-      MissionID: m.id,
-      MissionDateTime: m.dtISO,
-      TailNumber: m.tailNumber || "",
-      Pilot: nameById(state.crew, m.pilotId),
-      MissionCommander: nameById(state.crew, m.mcId),
-      CoPilot: nameById(state.crew, m.copilotId),
-      Notes: m.notes || ""
+  // ---------- Flatten data ----------
+  const missionsRows = state.missions.map(m => {
+    const relCount = (m.releases || []).reduce((a,r)=>a+(Number(r.qty)||0),0);
+    const hitQty  = (m.releases || []).filter(r=>r.state==="Hit").reduce((a,r)=>a+(Number(r.qty)||0),0);
+    const missQty = (m.releases || []).filter(r=>r.state==="Miss").reduce((a,r)=>a+(Number(r.qty)||0),0);
+    const dudQty  = (m.releases || []).filter(r=>r.state==="Dud").reduce((a,r)=>a+(Number(r.qty)||0),0);
+
+    return {
+      "Mission ID": m.id,
+      "Mission Date/Time (UTC)": m.dtISO,
+      "Tail Number": m.tailNumber || "",
+      "Pilot": nameById(state.crew, m.pilotId),
+      "Mission Commander": nameById(state.crew, m.mcId),
+      "Co-Pilot": nameById(state.crew, m.copilotId),
+      "Total Released": relCount,
+      "Hit (qty)": hitQty,
+      "Miss (qty)": missQty,
+      "Dud (qty)": dudQty,
+      "Notes": m.notes || ""
     };
+  });
 
-    const rels = (m.releases && m.releases.length) ? m.releases : [null];
-    for (const r of rels){
-      const t = r ? state.types.find(x=>x.id===r.typeId) : null;
-      const row = [
-        base.MissionID, base.MissionDateTime, base.TailNumber, base.Pilot, base.MissionCommander, base.CoPilot, base.Notes,
-        r ? r.id : "",
-        t ? t.cat : "",
-        t ? t.name : "",
-        r ? r.qty : "",
-        r ? (r.state || "") : "",
-        r ? nameById(state.crew, r.opPilotId) : "",
-        r ? nameById(state.crew, r.opMcId) : "",
-        r ? nameById(state.crew, r.opSensorId) : ""
-      ];
-      lines.push(row.map(csvEscape).join(","));
+  const releasesRows = [];
+  for (const m of state.missions){
+    for (const r of (m.releases || [])){
+      const t = state.types.find(x=>x.id===r.typeId);
+      releasesRows.push({
+        "Mission ID": m.id,
+        "Mission Date/Time (UTC)": m.dtISO,
+        "Tail Number": m.tailNumber || "",
+        "Weapon Category": t ? t.cat : "",
+        "Weapon Type": t ? t.name : "",
+        "Quantity": Number(r.qty||0),
+        "State": r.state || "",
+        "Op Pilot": nameById(state.crew, r.opPilotId),
+        "Op Mission Commander": nameById(state.crew, r.opMcId),
+        "Op Sensor Operator": nameById(state.crew, r.opSensorId),
+        "Release ID": r.id
+      });
     }
   }
 
-  downloadText("missions.csv", lines.join("\n"), "text/csv");
+  // ---------- Totals (Report) ----------
+  const totalFired = releasesRows.reduce((a,x)=>a+(Number(x["Quantity"])||0),0);
+  const totalHit   = releasesRows.filter(x=>x["State"]==="Hit").reduce((a,x)=>a+(Number(x["Quantity"])||0),0);
+  const totalMiss  = releasesRows.filter(x=>x["State"]==="Miss").reduce((a,x)=>a+(Number(x["Quantity"])||0),0);
+  const totalDud   = releasesRows.filter(x=>x["State"]==="Dud").reduce((a,x)=>a+(Number(x["Quantity"])||0),0);
+
+  const reportRows = [
+    { "Metric": "Total Fired", "Value": totalFired },
+    { "Metric": "Total Hit",   "Value": totalHit },
+    { "Metric": "Total Miss",  "Value": totalMiss },
+    { "Metric": "Total Dud",   "Value": totalDud },
+    { "Metric": "Exported At (Local)", "Value": new Date().toLocaleString() },
+    { "Metric": "App Version", "Value": APP_VERSION }
+  ];
+
+  // ---------- Build workbook ----------
+  const wb = XLSX.utils.book_new();
+  const wsMissions  = XLSX.utils.json_to_sheet(missionsRows, { skipHeader:false });
+  const wsReleases  = XLSX.utils.json_to_sheet(releasesRows, { skipHeader:false });
+  const wsReport    = XLSX.utils.json_to_sheet(reportRows, { skipHeader:false });
+
+  XLSX.utils.book_append_sheet(wb, wsReport,   "Report");
+  XLSX.utils.book_append_sheet(wb, wsMissions, "Missions");
+  XLSX.utils.book_append_sheet(wb, wsReleases, "Releases");
+
+  // ---------- Formatting helpers ----------
+  function setCols(ws, widths){ ws["!cols"] = widths.map(w => ({ wch: w })); }
+  function addAutoFilter(ws){
+    const ref = ws["!ref"]; if (!ref) return;
+    const range = XLSX.utils.decode_range(ref);
+    ws["!autofilter"] = { ref: XLSX.utils.encode_range({ s:{r:0,c:0}, e:{r:range.e.r,c:range.e.c} }) };
+  }
+  function freezeHeader(ws){ ws["!freeze"] = { xSplit: 0, ySplit: 1 }; }
+
+  // Apply formatting (these work in Community)
+  setCols(wsReport,   [28, 26]); addAutoFilter(wsReport);   freezeHeader(wsReport);
+  setCols(wsMissions, [18, 24, 14, 18, 22, 16, 14, 10, 10, 10, 36]); addAutoFilter(wsMissions); freezeHeader(wsMissions);
+  setCols(wsReleases, [18, 24, 14, 18, 22, 10, 10, 18, 22, 22, 18]); addAutoFilter(wsReleases); freezeHeader(wsReleases);
+
+  // ---------- Export ----------
+  const fileName = `Tactical_Mission_Log_v${APP_VERSION}.xlsx`;
+  XLSX.writeFile(wb, fileName);
 }
 
 function exportInventoryCSV(){
@@ -1023,7 +1073,7 @@ document.getElementById("saveMissionBtn").onclick = async ()=>{
 
 document.getElementById("clearMissionBtn").onclick = ()=>{ clearMissionForm(); };
 
-document.getElementById("exportMissionsBtn").onclick = exportMissionsCSV;
+document.getElementById("exportMissionsBtn").onclick = exportMissionsXLSX;
 document.getElementById("exportInventoryBtn").onclick = exportInventoryCSV;
 document.getElementById("exportEncryptedBtn").onclick = exportEncryptedBackup;
 
