@@ -1,975 +1,1732 @@
 <!doctype html>
+
 <html lang="en">
 <head>
-  <link rel="manifest" href="./manifest.json">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Tactical Mission Log</title>
-  <meta name="theme-color" content="#08110b" />
-  <script src="./xlsx.full.min.js"></script>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <title>TACTICAL MISSION LOG</title>
+  <meta name="theme-color" content="#050d07"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500&display=swap" rel="stylesheet"/>
   <style>
-    :root{
-      --bg:#07110a;
-      --panel: rgba(10, 25, 15, .72);
-      --line: rgba(140, 255, 170, .18);
-      --line2: rgba(140, 255, 170, .10);
-      --text:#e7fff0;
-      --muted: rgba(231,255,240,.72);
-      --accent:#6dff9a;
-      --danger:#ff6d6d;
-      --warn:#ffd26d;
-      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      --sys: -apple-system, system-ui, Segoe UI, Roboto, Arial;
-    }
-    * { box-sizing: border-box; }
-    body{
-      margin:0; color:var(--text); background:
-        radial-gradient(1200px 800px at 20% -10%, rgba(109,255,154,.16), transparent 60%),
-        radial-gradient(900px 700px at 110% 10%, rgba(109,255,154,.10), transparent 55%),
-        linear-gradient(180deg, #050b07, var(--bg));
-      font-family: var(--sys);
-      min-height: 100vh;
-    }
-    header{
-      position: sticky; top:0;
-      backdrop-filter: blur(10px);
-      background: rgba(5, 12, 7, .78);
-      border-bottom:1px solid var(--line);
-      padding: 14px 16px;
-      z-index: 5;
-    }
-    .title{
-      display:flex; align-items:baseline; justify-content:space-between; gap:10px;
-      font-weight:800; letter-spacing:.08em;
-      text-transform: uppercase;
-      font-family: var(--mono);
-      font-size: 16px;
-    }
-    .badge{
-      font-family: var(--mono);
-      font-size: 12px;
-      color: var(--accent);
-      border: 1px solid var(--line);
-      padding: 4px 8px;
-      border-radius: 999px;
-      opacity: .92;
-      display:flex;
-      gap:10px;
-      align-items:center;
-      flex-wrap:wrap;
-      justify-content:flex-end;
-    }
-    .badge .v{
-      color: rgba(231,255,240,.85);
-      border: 1px dashed var(--line);
-      padding: 2px 8px;
-      border-radius: 999px;
-      font-size: 11px;
-    }
-    main{ max-width: 980px; margin: 0 auto; padding: 16px; }
-    .card{
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      padding: 14px;
-      margin: 12px 0;
-      box-shadow: 0 10px 40px rgba(0,0,0,.35);
-    }
-    .small{ font-size: 12px; color: var(--muted); }
-    .mono{ font-family: var(--mono); }
-    .gridline{ border-top:1px dashed var(--line2); margin: 12px 0; }
-    .tabs{
-      display:flex; gap:8px; flex-wrap:wrap;
-      margin-top: 10px;
-    }
-    .tab{
-      font-family: var(--mono);
-      text-transform: uppercase;
-      letter-spacing: .06em;
-      font-size: 12px;
-      padding: 10px 12px;
-      border-radius: 12px;
-      border: 1px solid var(--line);
-      background: rgba(10,25,15,.35);
-      color: var(--text);
-      cursor: pointer;
-    }
-    .tab.active{
-      background: rgba(109,255,154,.18);
-      border-color: rgba(109,255,154,.38);
-      color: var(--accent);
-    }
-    label{ display:block; margin: 10px 0 6px; color: var(--muted); font-size: 12px; font-family: var(--mono); letter-spacing:.04em; }
-    input, select, button, textarea{
-      width: 100%;
-      font-size: 15px;
-      padding: 12px;
-      border-radius: 12px;
-      border: 1px solid var(--line);
-      background: rgba(3, 8, 5, .68);
-      color: var(--text);
-      outline: none;
-    }
-    textarea{ min-height: 88px; resize: vertical; }
-    .row{ display:flex; gap: 10px; align-items: end; flex-wrap: wrap; }
-    .row > .col{ flex:1; min-width: 220px; }
-    button{
-      cursor:pointer;
-      font-family: var(--mono);
-      text-transform: uppercase;
-      letter-spacing: .06em;
-    }
-    .btnRow{ display:flex; gap: 10px; flex-wrap: wrap; }
-    .btn{ width:auto; padding: 12px 14px; }
-    .btn.primary{ border-color: rgba(109,255,154,.42); background: rgba(109,255,154,.18); color: var(--accent); }
-    .btn.danger{ border-color: rgba(255,109,109,.38); background: rgba(255,109,109,.12); color: #ffbcbc; }
-    .btn.warn{ border-color: rgba(255,210,109,.35); background: rgba(255,210,109,.10); color: #ffe1a3; }
-    .pill{
-      display:inline-flex; gap:8px; align-items:center;
-      border:1px solid var(--line);
-      border-radius: 999px;
-      padding: 6px 10px;
-      font-family: var(--mono);
-      font-size: 12px;
-      color: var(--accent);
-      background: rgba(109,255,154,.10);
-    }
-    .list{
-      border-top:1px solid var(--line2);
-      margin-top: 10px;
-    }
-    .item{
-      display:flex; justify-content:space-between; gap: 10px; align-items:center;
-      padding: 10px 0;
-      border-bottom:1px solid var(--line2);
-    }
-    .itemTitle{ font-weight:700; }
-    .itemMeta{ color: var(--muted); font-size: 12px; }
-    .hidden{ display:none !important; }
-    .kpi{
-      display:flex; gap:10px; flex-wrap:wrap; margin-top: 8px;
-    }
-    .kpi .cardMini{
-      border:1px solid var(--line);
-      border-radius: 14px;
-      padding: 10px 12px;
-      background: rgba(3,8,5,.55);
-      min-width: 200px;
-    }
-    .cardMini .val{ font-family: var(--mono); font-size: 18px; color: var(--accent); }
-    .cardMini .lbl{ font-size: 12px; color: var(--muted); font-family: var(--mono); letter-spacing:.04em; }
-    .notice{
-      border-left: 3px solid rgba(109,255,154,.6);
-      padding: 10px 12px;
-      background: rgba(109,255,154,.08);
-      border-radius: 12px;
-      margin-top: 10px;
-      color: var(--muted);
-    }
-    .err{ color: #ffbcbc; font-size: 12px; margin-top: 8px; }
+    /* ─── DESIGN TOKENS ─────────────────────────────────────── */
+    :root {
+      --bg0:      #030a05;
+      --bg1:      #060f08;
+      --bg2:      #091409;
+      --panel:    rgba(8, 20, 10, 0.80);
+      --glass:    rgba(12, 28, 14, 0.60);
+
+```
+  --line:     rgba(109, 255, 154, 0.14);
+  --line2:    rgba(109, 255, 154, 0.07);
+  --line3:    rgba(109, 255, 154, 0.22);
+
+  --text:     #dff5e8;
+  --muted:    rgba(175, 230, 195, 0.65);
+  --faint:    rgba(140, 200, 160, 0.38);
+
+  --green:    #6dff9a;
+  --green2:   #3ddb6a;
+  --greenDim: rgba(109,255,154,0.12);
+  --greenGlow:rgba(109,255,154,0.25);
+
+  --warn:     #ffd26d;
+  --warnDim:  rgba(255,210,109,0.12);
+  --danger:   #ff6d6d;
+  --dangerDim:rgba(255,109,109,0.10);
+
+  --mono: 'Share Tech Mono', ui-monospace, monospace;
+  --display: 'Barlow Condensed', sans-serif;
+  --body: 'Barlow', sans-serif;
+
+  --radius: 10px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  --shadow: 0 8px 32px rgba(0,0,0,0.55), 0 2px 8px rgba(0,0,0,0.4);
+  --shadow-green: 0 0 24px rgba(109,255,154,0.08);
+}
+
+/* ─── RESET + BASE ───────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--body);
+  font-size: 14px;
+  color: var(--text);
+  background: var(--bg0);
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+/* Animated grid background */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(109,255,154,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(109,255,154,0.025) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 900px 600px at 15% -5%, rgba(109,255,154,0.13) 0%, transparent 65%),
+    radial-gradient(ellipse 700px 500px at 95% 5%,  rgba(109,255,154,0.07) 0%, transparent 60%),
+    radial-gradient(ellipse 600px 800px at 80% 90%, rgba(61,219,106,0.06) 0%, transparent 65%),
+    linear-gradient(180deg, #040c06 0%, #030a04 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ─── SCANLINE OVERLAY ────────────────────────────────────── */
+.scanlines {
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.07) 2px,
+    rgba(0,0,0,0.07) 4px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ─── LAYOUT ──────────────────────────────────────────────── */
+#root { position: relative; z-index: 2; }
+
+header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  background: rgba(3,8,5,0.88);
+  border-bottom: 1px solid var(--line3);
+  padding: 0 20px;
+}
+
+.header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0 10px;
+  gap: 12px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-icon {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--line3);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--greenDim);
+  flex-shrink: 0;
+}
+
+.brand-icon svg { width: 18px; height: 18px; }
+
+.brand-text {
+  font-family: var(--display);
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text);
+  line-height: 1;
+}
+
+.brand-sub {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--faint);
+  letter-spacing: 0.15em;
+  margin-top: 2px;
+}
+
+.header-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 8px var(--green); }
+  50%       { opacity: 0.5; box-shadow: 0 0 3px var(--green); }
+}
+
+.badge {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--green);
+  border: 1px solid var(--line3);
+  padding: 4px 9px;
+  border-radius: var(--radius-pill);
+  background: var(--greenDim);
+}
+
+/* ─── TABS ────────────────────────────────────────────────── */
+.tabs {
+  display: flex;
+  gap: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 0;
+}
+.tabs::-webkit-scrollbar { display: none; }
+
+.tab {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 10px 14px 9px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--faint);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+  position: relative;
+}
+
+.tab:hover { color: var(--muted); }
+
+.tab.active {
+  color: var(--green);
+  border-bottom-color: var(--green);
+}
+
+/* ─── MAIN CONTENT ────────────────────────────────────────── */
+main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 20px 16px 48px;
+}
+
+/* ─── CARDS ───────────────────────────────────────────────── */
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow), var(--shadow-green);
+  backdrop-filter: blur(8px);
+  animation: fadeUp 0.25s ease both;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.card-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.card-title {
+  font-family: var(--display);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.card-sub {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+  line-height: 1.5;
+}
+
+/* ─── DIVIDER ─────────────────────────────────────────────── */
+.divider {
+  border: none;
+  border-top: 1px solid var(--line2);
+  margin: 16px 0;
+}
+
+/* ─── KPI GRID ────────────────────────────────────────────── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.kpi-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  background: rgba(3,8,5,0.55);
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, var(--greenDim) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.kpi-card:hover { border-color: var(--line3); }
+.kpi-card:hover::before { opacity: 1; }
+
+.kpi-val {
+  font-family: var(--mono);
+  font-size: 26px;
+  color: var(--green);
+  line-height: 1;
+  text-shadow: 0 0 20px rgba(109,255,154,0.4);
+}
+
+.kpi-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: var(--faint);
+  margin-top: 4px;
+  text-transform: uppercase;
+}
+
+.kpi-card.warn  .kpi-val { color: var(--warn); text-shadow: 0 0 20px rgba(255,210,109,0.4); }
+.kpi-card.danger .kpi-val { color: var(--danger); text-shadow: 0 0 20px rgba(255,109,109,0.4); }
+.kpi-card.hit    .kpi-val { color: var(--green); }
+.kpi-card.miss   .kpi-val { color: var(--warn); }
+.kpi-card.dud    .kpi-val { color: var(--danger); }
+
+/* ─── EFFECTIVENESS BAR ───────────────────────────────────── */
+.eff-bar-wrap {
+  margin-top: 14px;
+}
+
+.eff-bar-labels {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--faint);
+  margin-bottom: 5px;
+  letter-spacing: 0.08em;
+}
+
+.eff-bar {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255,255,255,0.06);
+  overflow: hidden;
+  display: flex;
+  gap: 2px;
+}
+
+.eff-seg {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+}
+
+.eff-seg.hit  { background: var(--green); box-shadow: 0 0 8px rgba(109,255,154,0.6); }
+.eff-seg.miss { background: var(--warn); }
+.eff-seg.dud  { background: var(--danger); }
+
+/* ─── FORMS ───────────────────────────────────────────────── */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-group.span2 { grid-column: span 2; }
+
+label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--faint);
+  text-transform: uppercase;
+}
+
+input, select, textarea {
+  width: 100%;
+  font-family: var(--body);
+  font-size: 14px;
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: rgba(3,8,5,0.7);
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  -webkit-appearance: none;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--line3);
+  background: rgba(6,14,8,0.85);
+  box-shadow: 0 0 0 3px rgba(109,255,154,0.06);
+}
+
+input::placeholder, textarea::placeholder { color: var(--faint); }
+
+select {
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%236dff9a' opacity='.5' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+
+select option, select optgroup {
+  background: #060f08;
+  color: var(--text);
+}
+
+textarea { min-height: 76px; resize: vertical; line-height: 1.5; }
+
+/* ─── BUTTONS ─────────────────────────────────────────────── */
+.btn-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+button {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: rgba(3,8,5,0.6);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+button:hover { border-color: var(--line3); color: var(--text); }
+button:active { transform: scale(0.97); }
+
+button.primary {
+  border-color: rgba(109,255,154,0.35);
+  background: var(--greenDim);
+  color: var(--green);
+}
+button.primary:hover {
+  border-color: rgba(109,255,154,0.55);
+  background: rgba(109,255,154,0.18);
+  box-shadow: 0 0 16px rgba(109,255,154,0.12);
+}
+
+button.danger {
+  border-color: rgba(255,109,109,0.3);
+  background: var(--dangerDim);
+  color: #ffbcbc;
+}
+button.danger:hover {
+  border-color: rgba(255,109,109,0.5);
+  background: rgba(255,109,109,0.18);
+}
+
+button.warn {
+  border-color: rgba(255,210,109,0.3);
+  background: var(--warnDim);
+  color: var(--warn);
+}
+button.warn:hover {
+  border-color: rgba(255,210,109,0.5);
+  background: rgba(255,210,109,0.18);
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ─── PILLS ───────────────────────────────────────────────── */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  padding: 3px 9px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--green);
+  background: var(--greenDim);
+  letter-spacing: 0.06em;
+}
+.pill.hit   { color: var(--green);  background: rgba(109,255,154,0.1); border-color: rgba(109,255,154,0.2); }
+.pill.miss  { color: var(--warn);   background: rgba(255,210,109,0.1); border-color: rgba(255,210,109,0.2); }
+.pill.dud   { color: var(--danger); background: rgba(255,109,109,0.1); border-color: rgba(255,109,109,0.2); }
+.pill.muted { color: var(--faint);  background: transparent; }
+
+/* ─── LIST ITEMS ──────────────────────────────────────────── */
+.list { margin-top: 10px; }
+
+.list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line2);
+  transition: background 0.1s;
+  animation: fadeIn 0.2s ease both;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.list-item:last-child { border-bottom: none; }
+
+.item-main { flex: 1; min-width: 0; }
+.item-title {
+  font-family: var(--display);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.item-meta {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 3px;
+  line-height: 1.5;
+}
+.item-meta .mono { font-family: var(--mono); color: var(--faint); font-size: 10px; }
+
+.list-empty {
+  padding: 20px 0;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--faint);
+  letter-spacing: 0.08em;
+  border-top: 1px solid var(--line2);
+}
+
+/* Mission number badge */
+.mission-no {
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--green);
+  background: var(--greenDim);
+  border: 1px solid rgba(109,255,154,0.2);
+  border-radius: 6px;
+  padding: 2px 8px;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+
+/* ─── NOTICE ──────────────────────────────────────────────── */
+.notice {
+  border-left: 2px solid rgba(109,255,154,0.4);
+  padding: 10px 14px;
+  background: rgba(109,255,154,0.05);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  margin-top: 14px;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.err {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: #ffbcbc;
+  margin-top: 8px;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ─── AUTH CARDS ──────────────────────────────────────────── */
+.auth-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100dvh - 120px);
+  padding: 24px 16px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 400px;
+  background: var(--panel);
+  border: 1px solid var(--line3);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  box-shadow: var(--shadow), 0 0 60px rgba(109,255,154,0.06);
+  animation: fadeUp 0.3s ease;
+}
+
+.auth-icon {
+  width: 52px;
+  height: 52px;
+  border: 1px solid var(--line3);
+  border-radius: 12px;
+  background: var(--greenDim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.auth-title {
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.auth-sub {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin-bottom: 24px;
+}
+
+/* Password strength indicator */
+.strength-bar {
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255,255,255,0.06);
+  margin-top: 6px;
+  overflow: hidden;
+}
+
+.strength-fill {
+  height: 100%;
+  border-radius: 2px;
+  width: 0%;
+  transition: width 0.3s, background 0.3s;
+}
+
+/* ─── SECTION LABEL ───────────────────────────────────────── */
+.section-label {
+  font-family: var(--display);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line2);
+}
+
+/* ─── EXPORT GRID ─────────────────────────────────────────── */
+.export-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.export-btn {
+  width: 100%;
+  padding: 14px 16px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.export-btn .e-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.export-btn .e-sub {
+  font-size: 11px;
+  color: var(--faint);
+  text-transform: none;
+  letter-spacing: 0;
+  font-family: var(--body);
+}
+
+/* ─── INVENTORY PROGRESS ──────────────────────────────────── */
+.inv-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line2);
+}
+
+.inv-bar-wrap { flex: 1; max-width: 160px; }
+.inv-bar {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255,255,255,0.06);
+  overflow: hidden;
+}
+.inv-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--green);
+  transition: width 0.4s;
+}
+
+/* ─── RESPONSIVE ──────────────────────────────────────────── */
+@media (max-width: 600px) {
+  header { padding: 0 12px; }
+  main { padding: 14px 10px 48px; }
+  .card { padding: 14px; }
+  .auth-card { padding: 24px; }
+  .form-grid { grid-template-columns: 1fr; }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ─── UTILITY ─────────────────────────────────────────────── */
+.hidden { display: none !important; }
+.mono { font-family: var(--mono); }
+.accent { color: var(--green); }
+.space-top { margin-top: 14px; }
+```
+
   </style>
 </head>
-<script>
-  // Register Service Worker for offline
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-      navigator.serviceWorker.register("./sw.js").catch(console.error);
-    });
-  }
-</script>
+
 <body>
-<header>
-  <div class="title">
-    <span>TACTICAL MISSION LOG</span>
-    <span class="badge">
-      <span>OFFLINE • ENCRYPTED</span>
-      <span class="v" id="verBadge">v0.0.0</span>
-    </span>
-  </div>
-  <div class="tabs" id="tabs"></div>
-</header>
+<div class="scanlines"></div>
+<div id="root">
 
-<main>
-  <!-- Setup / Unlock -->
-  <div id="setupCard" class="card hidden">
-    <div class="mono" style="font-weight:800; letter-spacing:.08em;">VAULT INITIALIZATION</div>
-    <div class="small" style="margin-top:8px;">Create a password/PIN to encrypt your data on this device. If you forget it, the data cannot be recovered.</div>
-    <div class="gridline"></div>
-    <label>New password / PIN</label>
-    <input id="newPass" type="password" placeholder="Min 4 characters" />
-    <label>Confirm</label>
-    <input id="newPass2" type="password" placeholder="Repeat password / PIN" />
-    <div class="btnRow" style="margin-top:12px;">
-      <button class="btn primary" id="createBtn">CREATE VAULT</button>
+  <!-- ─── HEADER ──────────────────────────────────────────────── -->
+
+  <header>
+    <div class="header-top">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--green)">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="brand-text">Tactical Mission Log</div>
+          <div class="brand-sub">ENCRYPTED LOCAL VAULT</div>
+        </div>
+      </div>
+      <div class="header-badges">
+        <div class="status-dot" id="statusDot"></div>
+        <span class="badge" id="statusBadge">LOCKED</span>
+      </div>
+    </div>
+    <div class="tabs" id="tabs" style="display:none"></div>
+  </header>
+
+  <!-- ─── MAIN ────────────────────────────────────────────────── -->
+
+  <main>
+
+```
+<!-- ── SETUP ─────────────────────────────────── -->
+<div class="auth-wrap" id="setupWrap" style="display:none">
+  <div class="auth-card">
+    <div class="auth-icon">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.5">
+        <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+      </svg>
+    </div>
+    <div class="auth-title">Initialize Vault</div>
+    <div class="auth-sub">Create a password to encrypt your data locally. If lost, data cannot be recovered.</div>
+
+    <div class="form-group">
+      <label>New Password / PIN</label>
+      <input id="newPass" type="password" placeholder="Min 8 characters" autocomplete="new-password"/>
+      <div class="strength-bar"><div class="strength-fill" id="strengthFill"></div></div>
+    </div>
+    <div class="form-group" style="margin-top:10px">
+      <label>Confirm Password</label>
+      <input id="newPass2" type="password" placeholder="Repeat password" autocomplete="new-password"/>
+    </div>
+    <div class="btn-row">
+      <button class="primary" id="createBtn">INITIALIZE VAULT</button>
+    </div>
+    <div class="err hidden" id="setupErr"></div>
+  </div>
+</div>
+
+<!-- ── UNLOCK ─────────────────────────────────── -->
+<div class="auth-wrap" id="unlockWrap" style="display:none">
+  <div class="auth-card">
+    <div class="auth-icon">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.5">
+        <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>
+      </svg>
+    </div>
+    <div class="auth-title">Vault Locked</div>
+    <div class="auth-sub">Enter your password to decrypt and access mission data.</div>
+
+    <div class="form-group">
+      <label>Password / PIN</label>
+      <input id="passInput" type="password" placeholder="••••••••" autocomplete="current-password"/>
+    </div>
+    <div class="btn-row">
+      <button class="primary" id="unlockBtn">UNLOCK</button>
+    </div>
+    <div class="err hidden" id="unlockErr">⚠ Wrong password or vault corrupted.</div>
+  </div>
+</div>
+
+<!-- ── APP VIEWS ─────────────────────────────────── -->
+<div id="appRoot" class="hidden">
+
+  <!-- STATUS DASHBOARD -->
+  <div class="card" id="statusCard">
+    <div class="card-header">
+      <div class="card-title">Operations Status</div>
+      <span id="clockDisplay" class="mono" style="font-size:12px; color:var(--faint)"></span>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="kpi-val" id="kpiMissions">0</div><div class="kpi-label">Missions</div></div>
+      <div class="kpi-card"><div class="kpi-val" id="kpiCrew">0</div><div class="kpi-label">Crew Members</div></div>
+      <div class="kpi-card"><div class="kpi-val" id="kpiTypes">0</div><div class="kpi-label">Weapon Types</div></div>
+      <div class="kpi-card"><div class="kpi-val" id="kpiStock">0</div><div class="kpi-label">Total Stock</div></div>
+    </div>
+
+    <hr class="divider"/>
+    <div class="section-label">Weapon Effectiveness</div>
+
+    <div class="kpi-grid" style="margin-top:10px">
+      <div class="kpi-card"><div class="kpi-val" id="statFired">0</div><div class="kpi-label">Total Released</div></div>
+      <div class="kpi-card hit"><div class="kpi-val" id="statHit">0</div><div class="kpi-label">Hit</div></div>
+      <div class="kpi-card miss"><div class="kpi-val" id="statMiss">0</div><div class="kpi-label">Miss</div></div>
+      <div class="kpi-card dud"><div class="kpi-val" id="statDud">0</div><div class="kpi-label">Dud</div></div>
+    </div>
+
+    <div class="eff-bar-wrap" id="effBarWrap">
+      <div class="eff-bar-labels">
+        <span id="effHitPct">–</span>
+        <span id="effMissPct"></span>
+        <span id="effDudPct"></span>
+      </div>
+      <div class="eff-bar">
+        <div class="eff-seg hit"  id="effHitBar"  style="width:0%"></div>
+        <div class="eff-seg miss" id="effMissBar" style="width:0%"></div>
+        <div class="eff-seg dud"  id="effDudBar"  style="width:0%"></div>
+      </div>
+    </div>
+
+    <div class="notice">
+      <strong style="color:var(--text)">Install as app:</strong> Edge → ··· → Apps → Install this site. &nbsp;|&nbsp; Safari → Share → Add to Home Screen.
     </div>
   </div>
 
-  <div id="unlockCard" class="card hidden">
-    <div class="mono" style="font-weight:800; letter-spacing:.08em;">VAULT LOCKED</div>
-    <div class="small" style="margin-top:8px;">Enter your password/PIN to decrypt local data.</div>
-    <div class="gridline"></div>
-    <label>Password / PIN</label>
-    <input id="pass" type="password" placeholder="••••" />
-    <div class="btnRow" style="margin-top:12px;">
-      <button class="btn primary" id="unlockBtn">UNLOCK</button>
-    </div>
-    <div id="unlockErr" class="err"></div>
-  </div>
+  <!-- ── MISSIONS TAB ──────────────────────────────── -->
+  <div id="view_missions" class="hidden">
 
-  <!-- App -->
-  <div id="appRoot" class="hidden">
     <div class="card">
-      <div class="mono" style="font-weight:800; letter-spacing:.08em;">STATUS</div>
-      <div class="kpi">
-        <div class="cardMini">
-          <div class="val" id="kpiMissions">0</div>
-          <div class="lbl">MISSIONS LOGGED</div>
-        </div>
-        <div class="cardMini">
-          <div class="val" id="kpiCrew">0</div>
-          <div class="lbl">CREW MEMBERS</div>
-        </div>
-        <div class="cardMini">
-          <div class="val" id="kpiTypes">0</div>
-          <div class="lbl">WEAPON TYPES</div>
-        </div>
-      </div>
-      <div class="notice small">
-        Tip (Windows): Edge → Menu → Apps → “Install this site as an app” (requires https or localhost).<br/>
-        Tip (iPhone): Safari Share → “Add to Home Screen”.
-      </div>
-    </div>
+      <div class="card-title">New Mission Entry</div>
+      <hr class="divider"/>
 
-    <!-- MISSIONS -->
-    <div id="view_missions" class="card hidden">
-      <div class="mono" style="font-weight:800; letter-spacing:.08em;">MISSION ENTRY</div>
-      <div class="gridline"></div>
-
-      <div class="row">
-        <div class="col">
-          <label>Mission date/time</label>
-          <input id="missionDT" type="datetime-local" />
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Mission Date/Time</label>
+          <input id="missionDT" type="datetime-local"/>
         </div>
-
-        <!-- Tail number -->
-        <div class="col">
-          <label>Tail number</label>
-          <input id="tailNumber" placeholder="e.g., UAE-901 / AKINCI-02" />
+        <div class="form-group">
+          <label>Takeoff Time</label>
+          <input id="takeoffDT" type="datetime-local"/>
         </div>
-
-        <div class="col">
+        <div class="form-group">
+          <label>Landing Time</label>
+          <input id="landingDT" type="datetime-local"/>
+        </div>
+        <div class="form-group">
+          <label>Tail Number</label>
+          <input id="tailNumber" placeholder="UAE-901 / AKINCI-02"/>
+        </div>
+        <div class="form-group">
           <label>Pilot</label>
           <select id="pilotSel"></select>
         </div>
-        <div class="col">
+        <div class="form-group">
           <label>Mission Commander</label>
           <select id="mcSel"></select>
         </div>
-        <div class="col">
+        <div class="form-group">
           <label>Co-Pilot (optional)</label>
           <select id="copilotSel"></select>
         </div>
+        <div class="form-group span2">
+          <label>Notes</label>
+          <textarea id="missionNotes" placeholder="Tactical notes…"></textarea>
+        </div>
       </div>
 
-      <label>Notes (optional)</label>
-      <textarea id="missionNotes" placeholder="Brief tactical notes…"></textarea>
+      <hr class="divider"/>
+      <div class="section-label">Released Weapons</div>
 
-      <div class="gridline"></div>
-      <div class="mono" style="font-weight:800; letter-spacing:.08em;">RELEASED WEAPONS</div>
-      <div class="small">Add one or more release events to the mission (type + quantity + state + operating crew).</div>
-
-      <div class="row" style="margin-top:10px;">
-        <div class="col">
-          <label>Weapon type</label>
+      <div class="form-grid" style="margin-top:12px">
+        <div class="form-group">
+          <label>Weapon Type</label>
           <select id="relTypeSel"></select>
         </div>
-        <div class="col">
+        <div class="form-group">
           <label>Quantity</label>
-          <input id="relQty" type="number" min="1" value="1" />
+          <input id="relQty" type="number" min="1" value="1"/>
         </div>
-        <div class="col">
-          <label>Weapon state</label>
+        <div class="form-group">
+          <label>Weapon State</label>
           <select id="relState">
             <option value="Hit">Hit</option>
             <option value="Miss">Miss</option>
             <option value="Dud">Dud</option>
           </select>
         </div>
-        <div class="col">
+        <div class="form-group">
           <label>Operator: Pilot</label>
           <select id="relPilotSel"></select>
         </div>
-        <div class="col">
+        <div class="form-group">
           <label>Operator: Mission Commander</label>
           <select id="relMcSel"></select>
         </div>
-        <div class="col">
-          <label>Operator: Sensor Operator</label>
+        <div class="form-group">
+          <label>Operator: Sensor</label>
           <select id="relSensorSel"></select>
         </div>
       </div>
 
-      <div class="btnRow" style="margin-top:12px;">
-        <button class="btn warn" id="addReleaseBtn">ADD RELEASE</button>
+      <div class="btn-row">
+        <button class="warn" id="addReleaseBtn">+ ADD RELEASE</button>
       </div>
 
       <div id="releaseList" class="list"></div>
 
-      <div class="btnRow" style="margin-top:12px;">
-        <button class="btn primary" id="saveMissionBtn">SAVE MISSION</button>
-        <button class="btn danger" id="clearMissionBtn">CLEAR FORM</button>
+      <div class="btn-row">
+        <button class="primary" id="saveMissionBtn">SAVE MISSION</button>
+        <button id="clearMissionBtn">CLEAR FORM</button>
       </div>
+    </div>
 
-      <div class="gridline"></div>
-      <div class="mono" style="font-weight:800; letter-spacing:.08em;">MISSION LOG</div>
+    <div class="card">
+      <div class="card-title">Mission Log</div>
+      <div class="card-sub">All missions, newest first.</div>
       <div id="missionLog" class="list"></div>
     </div>
+  </div>
 
-    <!-- CREW -->
-    <div id="view_crew" class="card hidden">
-      <div class="mono" style="font-weight:800; letter-spacing:.08em;">CREW ROSTER</div>
-      <div class="small">Add/remove crew members. Roles control which dropdowns they appear in.</div>
-      <div class="gridline"></div>
-
-      <div class="row">
-        <div class="col">
-          <label>Name / Callsign</label>
-          <input id="crewName" placeholder="e.g., CAPT HZ3I / EAGLE-1" />
-        </div>
-        <div class="col">
-          <label>Role tag</label>
-          <select id="crewRoleTag">
-            <option value="">(choose role)</option>
-            <option value="Pilot">Pilot</option>
-            <option value="Mission Commander">Mission Commander</option>
-            <option value="Co-Pilot">Co-Pilot</option>
-            <option value="Sensor Operator">Sensor Operator</option>
-          </select>
-        </div>
-        <div class="col" style="min-width: 140px;">
-          <button class="btn primary" id="addCrewBtn">ADD CREW</button>
-        </div>
+  <!-- ── CREW TAB ──────────────────────────────────── -->
+  <div id="view_crew" class="card hidden">
+    <div class="card-title">Crew Roster</div>
+    <div class="card-sub">Crew members are filtered by role tag in mission dropdowns.</div>
+    <hr class="divider"/>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Name / Callsign</label>
+        <input id="crewName" placeholder="CAPT HZ3I / EAGLE-1"/>
       </div>
-
-      <div id="crewList" class="list"></div>
+      <div class="form-group">
+        <label>Role Tag</label>
+        <select id="crewRoleTag">
+          <option value="">(none)</option>
+          <option value="Pilot">Pilot</option>
+          <option value="Mission Commander">Mission Commander</option>
+          <option value="Co-Pilot">Co-Pilot</option>
+          <option value="Sensor Operator">Sensor Operator</option>
+        </select>
+      </div>
+      <div class="form-group" style="align-self:end">
+        <button class="primary" id="addCrewBtn">ADD CREW MEMBER</button>
+      </div>
     </div>
+    <div id="crewList" class="list"></div>
+  </div>
 
-    <!-- WEAPON TYPES -->
-    <div id="view_types" class="card hidden">
-      <div class="mono" style="font-weight:800; letter-spacing:.08em;">WEAPON TYPES</div>
-      <div class="small">Add/remove bomb/missile types used in missions and inventory.</div>
-      <div class="gridline"></div>
-
-      <div class="row">
-        <div class="col">
-          <label>Type name</label>
-          <input id="typeName" placeholder="e.g., AGM-114 / GBU-12 / MAM-L" />
-        </div>
-        <div class="col">
-          <label>Category</label>
-          <select id="typeCat">
-            <option value="Missile">Missile</option>
-            <option value="Bomb">Bomb</option>
-            <option value="Rocket">Rocket</option>
-            <option value="Other">Other</option>
-          </select>
-        </div>
-        <div class="col" style="min-width: 140px;">
-          <button class="btn primary" id="addTypeBtn">ADD TYPE</button>
-        </div>
+  <!-- ── WEAPON TYPES TAB ──────────────────────────── -->
+  <div id="view_types" class="card hidden">
+    <div class="card-title">Weapon Types</div>
+    <div class="card-sub">Define bomb/missile/rocket types used across missions and inventory.</div>
+    <hr class="divider"/>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Type Name</label>
+        <input id="typeName" placeholder="AGM-114 / GBU-12 / MAM-L"/>
       </div>
-
-      <div id="typeList" class="list"></div>
+      <div class="form-group">
+        <label>Category</label>
+        <select id="typeCat">
+          <option value="Missile">Missile</option>
+          <option value="Bomb">Bomb</option>
+          <option value="Rocket">Rocket</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="form-group" style="align-self:end">
+        <button class="primary" id="addTypeBtn">ADD TYPE</button>
+      </div>
     </div>
+    <div id="typeList" class="list"></div>
+  </div>
 
-    <!-- INVENTORY -->
-    <div id="view_inventory" class="card hidden">
-      <div class="mono" style="font-weight:800; letter-spacing:.08em;">INVENTORY</div>
-      <div class="small">Set stock levels per weapon type (fully offline). Releases can optionally reduce inventory.</div>
-      <div class="gridline"></div>
-
-      <div class="row">
-        <div class="col">
-          <label>Weapon type</label>
-          <select id="invTypeSel"></select>
-        </div>
-        <div class="col">
-          <label>Set quantity</label>
-          <input id="invQty" type="number" min="0" value="0" />
-        </div>
-        <div class="col" style="min-width: 180px;">
-          <button class="btn primary" id="setInvBtn">SET INVENTORY</button>
-        </div>
+  <!-- ── INVENTORY TAB ─────────────────────────────── -->
+  <div id="view_inventory" class="card hidden">
+    <div class="card-title">Inventory</div>
+    <div class="card-sub">Set and track stock levels per weapon type.</div>
+    <hr class="divider"/>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Weapon Type</label>
+        <select id="invTypeSel"></select>
       </div>
-
-      <label style="margin-top:14px;">Auto-decrement inventory when saving mission</label>
+      <div class="form-group">
+        <label>Set Quantity</label>
+        <input id="invQty" type="number" min="0" value="0"/>
+      </div>
+      <div class="form-group" style="align-self:end">
+        <button class="primary" id="setInvBtn">SET STOCK</button>
+      </div>
+    </div>
+    <div class="form-group" style="margin-top:12px">
+      <label>Auto-decrement inventory on save</label>
       <select id="autoDecr">
         <option value="on">ON (recommended)</option>
         <option value="off">OFF</option>
       </select>
+    </div>
+    <div id="invList" class="list"></div>
+  </div>
 
-      <div id="invList" class="list"></div>
+  <!-- ── EXPORT TAB ────────────────────────────────── -->
+  <div id="view_export" class="card hidden">
+    <div class="card-title">Export & Backup</div>
+    <div class="card-sub">CSV exports open in Excel. Encrypted backup preserves vault state for import.</div>
+    <hr class="divider"/>
+
+    <div class="section-label">Data Export</div>
+    <div class="export-grid">
+      <button class="export-btn primary" id="exportSummaryBtn">
+        <span class="e-label">Missions Summary</span>
+        <span class="e-sub">1 row per mission (CSV)</span>
+      </button>
+      <button class="export-btn primary" id="exportWeaponsBtn">
+        <span class="e-label">Weapons Detail</span>
+        <span class="e-sub">1 row per release event (CSV)</span>
+      </button>
+      <button class="export-btn primary" id="exportInventoryBtn">
+        <span class="e-label">Inventory</span>
+        <span class="e-sub">Current stock levels (CSV)</span>
+      </button>
+      <button class="export-btn warn" id="exportEncryptedBtn">
+        <span class="e-label">Encrypted Backup</span>
+        <span class="e-sub">Full vault export (JSON)</span>
+      </button>
     </div>
 
-    <!-- EXPORT -->
-    <div id="view_export" class="card hidden">
-      <div class="mono" style="font-weight:800; letter-spacing:.08em;">EXPORT & BACKUP</div>
-      <div class="small">Excel export is CSV (opens in Excel). Backup is encrypted JSON.</div>
-      <div class="gridline"></div>
+    <hr class="divider"/>
+    <div class="section-label">Session</div>
+    <div class="btn-row">
+      <button class="danger" id="lockBtn">LOCK VAULT</button>
+    </div>
 
-      <div class="btnRow">
-        <button class="btn primary" id="exportMissionsBtn">EXPORT MISSIONS (XLSX)</button>
-        <button class="btn primary" id="exportInventoryBtn">EXPORT INVENTORY (CSV)</button>
-        <button class="btn warn" id="exportEncryptedBtn">EXPORT ENCRYPTED BACKUP</button>
-      </div>
-
-      <div class="gridline"></div>
-      <div class="mono" style="font-weight:800; letter-spacing:.08em;">LOCK</div>
-      <div class="btnRow" style="margin-top:10px;">
-        <button class="btn danger" id="lockBtn">LOCK VAULT</button>
-      </div>
-
-      <div class="gridline"></div>
-      <div class="mono" style="font-weight:800; letter-spacing:.08em;">DANGER ZONE</div>
-      <div class="small">This wipes all local data (cannot be undone).</div>
-      <div class="btnRow" style="margin-top:10px;">
-        <button class="btn danger" id="wipeBtn">WIPE DEVICE DATA</button>
-      </div>
+    <hr class="divider"/>
+    <div class="section-label" style="color:var(--danger)">Danger Zone</div>
+    <div class="card-sub">Permanently erases all local data. Cannot be undone.</div>
+    <div class="btn-row">
+      <button class="danger" id="wipeBtn">WIPE ALL DEVICE DATA</button>
     </div>
   </div>
-</main>
+
+</div><!-- /appRoot -->
+```
+
+  </main>
+</div><!-- /root -->
 
 <script>
-/* =========================
-   App Version
-   ========================= */
-const APP_VERSION = "1.2.2";
-document.getElementById("verBadge").textContent = "v" + APP_VERSION;
+/* ═══════════════════════════════════════════════════════════
+   CONSTANTS & CRYPTO HELPERS
+═══════════════════════════════════════════════════════════ */
+const META_KEY = 'tml_vault_meta_v2';
+const DATA_KEY = 'tml_vault_data_v2';
 
-/* =========================
-   Encrypted Offline Vault
-   ========================= */
-const META_KEY = "tml_vault_meta_v1";
-const DATA_KEY = "tml_vault_data_v1";
-const enc = new TextEncoder();
-const dec = new TextDecoder();
+const PBKDF2_ITERATIONS = 600_000;   // upgraded from 250k
+const PBKDF2_HASH      = 'SHA-256';
 
-function b64(bytes){ return btoa(String.fromCharCode(...new Uint8Array(bytes))); }
-function unb64(str){
-  const bin = atob(str);
-  const bytes = new Uint8Array(bin.length);
-  for (let i=0;i<bin.length;i++) bytes[i] = bin.charCodeAt(i);
-  return bytes;
+const te = new TextEncoder();
+const td = new TextDecoder();
+
+function toB64(bytes) {
+  return btoa(String.fromCharCode(...new Uint8Array(bytes)));
 }
-async function deriveKey(password, saltBytes, iterations){
-  const baseKey = await crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]);
+
+function fromB64(str) {
+  const bin = atob(str);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+async function deriveKey(password, salt, iterations = PBKDF2_ITERATIONS) {
+  const raw = await crypto.subtle.importKey(
+    'raw', te.encode(password), 'PBKDF2', false, ['deriveKey']
+  );
   return crypto.subtle.deriveKey(
-    { name:"PBKDF2", salt:saltBytes, iterations, hash:"SHA-256" },
-    baseKey,
-    { name:"AES-GCM", length:256 },
+    { name: 'PBKDF2', salt, iterations, hash: PBKDF2_HASH },
+    raw,
+    { name: 'AES-GCM', length: 256 },
     false,
-    ["encrypt","decrypt"]
+    ['encrypt', 'decrypt']
   );
 }
-async function encryptJson(key, obj){
+
+async function encryptJson(key, obj) {
   const iv = crypto.getRandomValues(new Uint8Array(12));
-  const plaintext = enc.encode(JSON.stringify(obj));
-  const ciphertext = await crypto.subtle.encrypt({ name:"AES-GCM", iv }, key, plaintext);
-  return { iv: b64(iv), ct: b64(ciphertext) };
+  const ct = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv },
+    key,
+    te.encode(JSON.stringify(obj))
+  );
+  return { iv: toB64(iv), ct: toB64(ct) };
 }
-async function decryptJson(key, payload){
-  const iv = unb64(payload.iv);
-  const ct = unb64(payload.ct);
-  const plaintext = await crypto.subtle.decrypt({ name:"AES-GCM", iv }, key, ct);
-  return JSON.parse(dec.decode(plaintext));
-}
-function getMeta(){ const raw = localStorage.getItem(META_KEY); return raw ? JSON.parse(raw) : null; }
-function setMeta(meta){ localStorage.setItem(META_KEY, JSON.stringify(meta)); }
-function getEncryptedData(){ const raw = localStorage.getItem(DATA_KEY); return raw ? JSON.parse(raw) : null; }
-function setEncryptedData(payload){ localStorage.setItem(DATA_KEY, JSON.stringify(payload)); }
 
+async function decryptJson(key, { iv, ct }) {
+  const plain = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv: fromB64(iv) },
+    key,
+    fromB64(ct)
+  );
+  return JSON.parse(td.decode(plain));
+}
+
+function loadMeta()        { try { return JSON.parse(localStorage.getItem(META_KEY)); } catch { return null; } }
+function saveMeta(m)       { localStorage.setItem(META_KEY, JSON.stringify(m)); }
+function loadEncData()     { try { return JSON.parse(localStorage.getItem(DATA_KEY)); } catch { return null; } }
+function saveEncData(p)    { localStorage.setItem(DATA_KEY, JSON.stringify(p)); }
+
+/* ═══════════════════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════════════════ */
 let vaultKey = null;
+const EMPTY_STATE = () => ({
+  crew: [], types: [], inventory: {}, missions: [],
+  settings: { autoDecr: 'on' }
+});
+let state = EMPTY_STATE();
 
-/* =========================
-   Data Model
-   ========================= */
-function uid(){ return Math.random().toString(16).slice(2) + Date.now().toString(16); }
+function uid() { return crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Date.now().toString(36); }
 
-let state = {
-  crew: [],         // {id,name,tag}
-  types: [],        // {id,name,cat}
-  inventory: {},    // typeId -> qty
-  missions: [],     // {id, dtISO, tailNumber, pilotId, mcId, copilotId, notes, releases:[...]}
-  settings: { autoDecr: "on" }
-};
-
-async function persist(){
+async function persist() {
   if (!vaultKey) return;
-  const payload = await encryptJson(vaultKey, state);
-  setEncryptedData(payload);
+  saveEncData(await encryptJson(vaultKey, state));
 }
 
-async function createVault(password){
+async function createVault(password) {
   const salt = crypto.getRandomValues(new Uint8Array(16));
-  const iterations = 250000;
-  setMeta({ salt: b64(salt), iterations });
+  const iterations = PBKDF2_ITERATIONS;
+  saveMeta({ salt: toB64(salt), iterations, version: 2 });
   vaultKey = await deriveKey(password, salt, iterations);
-  state = { crew:[], types:[], inventory:{}, missions:[], settings:{ autoDecr:"on" } };
+  state = EMPTY_STATE();
   await persist();
 }
 
-async function unlock(password){
-  const meta = getMeta();
-  const key = await deriveKey(password, unb64(meta.salt), meta.iterations);
-  const encData = getEncryptedData();
-  const data = encData ? await decryptJson(key, encData) : { crew:[], types:[], inventory:{}, missions:[], settings:{ autoDecr:"on" } };
-  return { key, data };
+async function openVault(password) {
+  const meta = loadMeta();
+  if (!meta) throw new Error('No vault');
+  const salt = fromB64(meta.salt);
+  const iterations = meta.iterations ?? PBKDF2_ITERATIONS;
+  const key = await deriveKey(password, salt, iterations);
+  const enc = loadEncData();
+  const data = enc ? await decryptJson(key, enc) : EMPTY_STATE();
+  vaultKey = key;
+  state = { ...EMPTY_STATE(), ...data };
 }
 
-/* =========================
-   UI Helpers
-   ========================= */
-const $ = (id)=>document.getElementById(id);
-function show(el, on=true){ el.classList.toggle("hidden", !on); }
-function esc(s){
-  return String(s ?? "").replace(/[&<>"']/g, ch => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[ch]));
-}
-function fmtDT(iso){
-  try { return new Date(iso).toLocaleString(); } catch { return iso; }
-}
-function nameById(arr, id){
-  const x = arr.find(o=>o.id===id);
-  return x ? x.name : "(unset)";
+/* ═══════════════════════════════════════════════════════════
+   DOM HELPERS
+═══════════════════════════════════════════════════════════ */
+const el = id => document.getElementById(id);
+
+function show(elem, on = true) {
+  if (!elem) return;
+  if (typeof elem === 'string') elem = el(elem);
+  elem.classList.toggle('hidden', !on);
+  if (elem.tagName === 'DIV' && !on && elem.style.display === '') {/* noop */}
 }
 
-/* =========================
-   Tabs / Views
-   ========================= */
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c =>
+    ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])
+  );
+}
+
+function fmtDT(iso) {
+  if (!iso) return '—';
+  try { return new Date(iso).toLocaleString([], { dateStyle:'short', timeStyle:'short' }); }
+  catch { return iso; }
+}
+
+function nameById(id) {
+  if (!id) return '(unset)';
+  return state.crew.find(c => c.id === id)?.name ?? '(removed)';
+}
+
+function typeById(id) {
+  return state.types.find(t => t.id === id);
+}
+
+function nowLocal() {
+  const d = new Date();
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 16);
+}
+
+function csvEsc(v) {
+  const s = String(v ?? '');
+  return /[,"\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s;
+}
+
+function download(filename, text, mime = 'text/plain') {
+  const a = Object.assign(document.createElement('a'), {
+    href: URL.createObjectURL(new Blob([text], { type: mime })),
+    download: filename
+  });
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function missionNo(id) {
+  const idx = state.missions.slice().reverse().findIndex(m => m.id === id);
+  return idx >= 0 ? String(idx + 1).padStart(3, '0') : '???';
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TABS
+═══════════════════════════════════════════════════════════ */
 const TABS = [
-  { id:"missions",  label:"Missions" },
-  { id:"crew",      label:"Crew" },
-  { id:"types",     label:"Weapon Types" },
-  { id:"inventory", label:"Inventory" },
-  { id:"export",    label:"Export" }
+  { id: 'missions',  label: 'Missions' },
+  { id: 'crew',      label: 'Crew' },
+  { id: 'types',     label: 'Weapons' },
+  { id: 'inventory', label: 'Inventory' },
+  { id: 'export',    label: 'Export' },
 ];
+let activeTab = 'missions';
 
-let activeTab = "missions";
+function renderTabs() {
+  const root = el('tabs');
+  root.innerHTML = '';
+  for (const t of TABS) {
+    const btn = document.createElement('button');
+    btn.className = 'tab' + (activeTab === t.id ? ' active' : '');
+    btn.textContent = t.label;
+    btn.onclick = () => { activeTab = t.id; renderAll(); };
+    root.appendChild(btn);
+  }
+  root.style.display = 'flex';
+}
 
-function renderTabs(){
-  const root = $("tabs");
-  root.innerHTML = "";
-  for (const t of TABS){
-    const b = document.createElement("button");
-    b.className = "tab" + (activeTab===t.id ? " active":"");
-    b.textContent = t.label;
-    b.onclick = ()=>{ activeTab = t.id; renderAll(); };
-    root.appendChild(b);
+function renderViews() {
+  for (const t of TABS) {
+    const v = el(`view_${t.id}`);
+    if (v) show(v, activeTab === t.id);
   }
 }
 
-function renderKPIs(){
-  $("kpiMissions").textContent = String(state.missions.length);
-  $("kpiCrew").textContent = String(state.crew.length);
-  $("kpiTypes").textContent = String(state.types.length);
+/* ═══════════════════════════════════════════════════════════
+   STATUS / KPIs
+═══════════════════════════════════════════════════════════ */
+function renderStatus() {
+  el('kpiMissions').textContent = state.missions.length;
+  el('kpiCrew').textContent     = state.crew.length;
+  el('kpiTypes').textContent    = state.types.length;
+
+  const totalStock = Object.values(state.inventory).reduce((a, n) => a + Number(n || 0), 0);
+  el('kpiStock').textContent = totalStock;
+
+  let fired = 0, hit = 0, miss = 0, dud = 0;
+  for (const m of state.missions) {
+    for (const r of m.releases ?? []) {
+      const q = Number(r.qty || 0);
+      fired += q;
+      if (r.state === 'Hit')  hit  += q;
+      if (r.state === 'Miss') miss += q;
+      if (r.state === 'Dud')  dud  += q;
+    }
+  }
+
+  el('statFired').textContent = fired;
+  el('statHit').textContent   = hit;
+  el('statMiss').textContent  = miss;
+  el('statDud').textContent   = dud;
+
+  if (fired > 0) {
+    const hp = (hit  / fired * 100).toFixed(1);
+    const mp = (miss / fired * 100).toFixed(1);
+    const dp = (dud  / fired * 100).toFixed(1);
+    el('effHitBar').style.width  = hp + '%';
+    el('effMissBar').style.width = mp + '%';
+    el('effDudBar').style.width  = dp + '%';
+    el('effHitPct').textContent  = `HIT ${hp}%`;
+    el('effMissPct').textContent = `MISS ${mp}%`;
+    el('effDudPct').textContent  = `DUD ${dp}%`;
+  } else {
+    el('effHitBar').style.width = el('effMissBar').style.width = el('effDudBar').style.width = '0%';
+    el('effHitPct').textContent = 'NO RELEASES YET';
+    el('effMissPct').textContent = el('effDudPct').textContent = '';
+  }
 }
 
-/* =========================
-   Dropdowns (FILTERED BY ROLE ONLY)
-   ========================= */
-function fillCrewSelectByRole(selEl, roleTag, allowBlank=true, blankLabel="(select)"){
-  selEl.innerHTML = "";
-  if (allowBlank){
-    const o = document.createElement("option");
-    o.value = "";
-    o.textContent = blankLabel;
-    selEl.appendChild(o);
-  }
-  for (const c of state.crew.filter(x => (x.tag||"").trim() === roleTag)){
-    const o = document.createElement("option");
-    o.value = c.id;
-    o.textContent = c.name;
-    selEl.appendChild(o);
-  }
+/* Live clock */
+function startClock() {
+  const clockEl = el('clockDisplay');
+  if (!clockEl) return;
+  const tick = () => {
+    clockEl.textContent = new Date().toUTCString().replace('GMT', 'UTC').slice(0, -4);
+  };
+  tick();
+  setInterval(tick, 1000);
 }
 
-function fillTypeSelect(selEl, allowBlank=true){
-  selEl.innerHTML = "";
-  if (allowBlank){
-    const o = document.createElement("option");
-    o.value = "";
-    o.textContent = "(select)";
-    selEl.appendChild(o);
+/* ═══════════════════════════════════════════════════════════
+   DROPDOWNS
+═══════════════════════════════════════════════════════════ */
+function fillCrewSelect(selEl, roleTag, allowBlank = true, blankLabel = '(select)') {
+  if (!selEl) return;
+  const prev = selEl.value;
+  selEl.innerHTML = '';
+  if (allowBlank) {
+    selEl.append(Object.assign(document.createElement('option'), { value: '', textContent: blankLabel }));
   }
-  for (const t of state.types){
-    const o = document.createElement("option");
-    o.value = t.id;
-    o.textContent = `${t.cat}: ${t.name}`;
-    selEl.appendChild(o);
-  }
+
+  const tagged    = state.crew.filter(c => (c.tag || '').trim() === roleTag);
+  const untagged  = state.crew.filter(c => !(c.tag || '').trim());
+
+  const makeGroup = (label, items) => {
+    if (!items.length) return;
+    const g = document.createElement('optgroup');
+    g.label = label;
+    items.forEach(c => {
+      g.append(Object.assign(document.createElement('option'), { value: c.id, textContent: c.name }));
+    });
+    selEl.append(g);
+  };
+
+  makeGroup(roleTag.toUpperCase(), tagged);
+  makeGroup('UNASSIGNED', untagged);
+  selEl.value = prev;
 }
 
-/* =========================
-   Missions Form State
-   ========================= */
-let missionDraftReleases = [];
+function fillTypeSelect(selEl, allowBlank = true) {
+  if (!selEl) return;
+  const prev = selEl.value;
+  selEl.innerHTML = '';
+  if (allowBlank) {
+    selEl.append(Object.assign(document.createElement('option'), { value: '', textContent: '(select)' }));
+  }
+  for (const t of state.types) {
+    selEl.append(Object.assign(document.createElement('option'), {
+      value: t.id,
+      textContent: `${t.cat}: ${t.name}`
+    }));
+  }
+  selEl.value = prev;
+}
 
-function clearMissionForm(){
-  $("missionDT").value = "";
-  $("tailNumber").value = "";
-  $("pilotSel").value = "";
-  $("mcSel").value = "";
-  $("copilotSel").value = "";
-  $("missionNotes").value = "";
-  missionDraftReleases = [];
-  $("relQty").value = 1;
-  $("relState").value = "Hit";
+function renderDropdowns() {
+  fillCrewSelect(el('pilotSel'),     'Pilot',              true, '(select pilot)');
+  fillCrewSelect(el('mcSel'),        'Mission Commander',  true, '(select MC)');
+  fillCrewSelect(el('copilotSel'),   'Co-Pilot',           true, '(none)');
+  fillTypeSelect(el('relTypeSel'),   true);
+  fillCrewSelect(el('relPilotSel'),  'Pilot',              true, '(pilot)');
+  fillCrewSelect(el('relMcSel'),     'Mission Commander',  true, '(MC)');
+  fillCrewSelect(el('relSensorSel'), 'Sensor Operator',    true, '(sensor)');
+  fillTypeSelect(el('invTypeSel'),   true);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MISSIONS
+═══════════════════════════════════════════════════════════ */
+let draftReleases = [];
+
+function clearMissionForm() {
+  ['missionDT','takeoffDT','landingDT'].forEach(id => el(id).value = '');
+  el('tailNumber').value = '';
+  el('pilotSel').value   = '';
+  el('mcSel').value      = '';
+  el('copilotSel').value = '';
+  el('missionNotes').value = '';
+  el('relQty').value     = 1;
+  el('relState').value   = 'Hit';
+  draftReleases = [];
   renderReleaseDraft();
 }
 
-function renderReleaseDraft(){
-  const list = $("releaseList");
-  list.innerHTML = "";
-  if (!missionDraftReleases.length){
-    const d = document.createElement("div");
-    d.className = "item";
-    d.innerHTML = `<div><div class="itemTitle mono">NO RELEASES ADDED</div><div class="itemMeta">Add release events above if applicable.</div></div>`;
-    list.appendChild(d);
+function renderReleaseDraft() {
+  const list = el('releaseList');
+  list.innerHTML = '';
+
+  if (!draftReleases.length) {
+    list.innerHTML = '<div class="list-empty">NO RELEASE EVENTS ADDED</div>';
     return;
   }
-  for (const r of missionDraftReleases){
-    const t = state.types.find(x=>x.id===r.typeId);
-    const row = document.createElement("div");
-    row.className = "item";
+
+  for (const r of draftReleases) {
+    const t = typeById(r.typeId);
+    const row = document.createElement('div');
+    row.className = 'list-item';
     row.innerHTML = `
-      <div>
-        <div class="itemTitle">
-          ${esc(t ? `${t.cat}: ${t.name}` : "(type missing)")}
-          <span class="pill">QTY ${r.qty}</span>
-          <span class="pill">${esc(r.state || "Hit")}</span>
+      <div class="item-main">
+        <div class="item-title">
+          <span>${esc(t ? `${t.cat}: ${t.name}` : '(unknown)')}</span>
+          <span class="pill muted">QTY ${r.qty}</span>
+          <span class="pill ${r.state.toLowerCase()}">${esc(r.state)}</span>
         </div>
-        <div class="itemMeta">Ops: Pilot=${esc(nameById(state.crew, r.opPilotId))} • MC=${esc(nameById(state.crew, r.opMcId))} • Sensor=${esc(nameById(state.crew, r.opSensorId))}</div>
+        <div class="item-meta">
+          Pilot: ${esc(nameById(r.opPilotId))} &nbsp;·&nbsp;
+          MC: ${esc(nameById(r.opMcId))} &nbsp;·&nbsp;
+          Sensor: ${esc(nameById(r.opSensorId))}
+        </div>
       </div>
     `;
-    const actions = document.createElement("div");
-    actions.className = "btnRow";
-    const del = document.createElement("button");
-    del.className = "btn danger";
-    del.textContent = "REMOVE";
-    del.onclick = ()=>{
-      missionDraftReleases = missionDraftReleases.filter(x=>x.id!==r.id);
+    const del = document.createElement('button');
+    del.className = 'danger';
+    del.textContent = 'REMOVE';
+    del.onclick = () => {
+      draftReleases = draftReleases.filter(x => x.id !== r.id);
       renderReleaseDraft();
     };
-    actions.appendChild(del);
-    row.appendChild(actions);
+    row.appendChild(del);
     list.appendChild(row);
   }
 }
 
-function renderMissionLog(){
-  const log = $("missionLog");
-  log.innerHTML = "";
-  if (!state.missions.length){
-    const d = document.createElement("div");
-    d.className = "item";
-    d.innerHTML = `<div><div class="itemTitle mono">NO MISSIONS LOGGED</div><div class="itemMeta">Add your first mission above.</div></div>`;
-    log.appendChild(d);
+function renderMissionLog() {
+  const log = el('missionLog');
+  log.innerHTML = '';
+
+  if (!state.missions.length) {
+    log.innerHTML = '<div class="list-empty">NO MISSIONS LOGGED YET</div>';
     return;
   }
 
-  for (const m of state.missions){
-    const relCount = m.releases?.reduce((a,x)=>a+(Number(x.qty)||0),0) || 0;
-    const hits = m.releases?.filter(r => r.state === "Hit").length || 0;
-    const misses = m.releases?.filter(r => r.state === "Miss").length || 0;
-    const duds = m.releases?.filter(r => r.state === "Dud").length || 0;
+  for (const m of state.missions) {
+    const rels = m.releases ?? [];
+    const total = rels.reduce((a, r) => a + Number(r.qty || 0), 0);
+    const hit   = rels.filter(r => r.state === 'Hit').reduce((a, r)  => a + Number(r.qty || 0), 0);
+    const miss  = rels.filter(r => r.state === 'Miss').reduce((a, r) => a + Number(r.qty || 0), 0);
+    const dud   = rels.filter(r => r.state === 'Dud').reduce((a, r)  => a + Number(r.qty || 0), 0);
 
-    const row = document.createElement("div");
-    row.className = "item";
+    const row = document.createElement('div');
+    row.className = 'list-item';
     row.innerHTML = `
-      <div>
-        <div class="itemTitle">
+      <div class="item-main">
+        <div class="item-title">
+          <span class="mission-no">#${missionNo(m.id)}</span>
           ${esc(fmtDT(m.dtISO))}
-          <span class="pill">TAIL ${esc(m.tailNumber || "-")}</span>
-          <span class="pill">REL ${relCount}</span>
-          <span class="pill">H ${hits}</span>
-          <span class="pill">M ${misses}</span>
-          <span class="pill">D ${duds}</span>
+          ${m.tailNumber ? `<span class="pill muted">${esc(m.tailNumber)}</span>` : ''}
+          ${total  ? `<span class="pill muted">REL ${total}</span>`  : ''}
+          ${hit    ? `<span class="pill hit">H ${hit}</span>`        : ''}
+          ${miss   ? `<span class="pill miss">M ${miss}</span>`      : ''}
+          ${dud    ? `<span class="pill dud">D ${dud}</span>`        : ''}
         </div>
-        <div class="itemMeta">Pilot=${esc(nameById(state.crew, m.pilotId))} • MC=${esc(nameById(state.crew, m.mcId))} • Co=${esc(nameById(state.crew, m.copilotId))}</div>
-        ${m.notes ? `<div class="itemMeta">Notes: ${esc(m.notes)}</div>` : ``}
+        <div class="item-meta">
+          TO: ${esc(fmtDT(m.takeoffISO))} &nbsp;·&nbsp; LND: ${esc(fmtDT(m.landingISO))}
+        </div>
+        <div class="item-meta">
+          Pilot: ${esc(nameById(m.pilotId))} &nbsp;·&nbsp;
+          MC: ${esc(nameById(m.mcId))} &nbsp;·&nbsp;
+          Co: ${esc(nameById(m.copilotId))}
+        </div>
+        ${m.notes ? `<div class="item-meta" style="color:var(--faint);font-style:italic">${esc(m.notes)}</div>` : ''}
       </div>
     `;
-    const actions = document.createElement("div");
-    actions.className = "btnRow";
-    const del = document.createElement("button");
-    del.className = "btn danger";
-    del.textContent = "DELETE";
-    del.onclick = async ()=>{
-      state.missions = state.missions.filter(x=>x.id!==m.id);
+    const del = document.createElement('button');
+    del.className = 'danger';
+    del.style.flexShrink = '0';
+    del.textContent = 'DELETE';
+    del.onclick = async () => {
+      if (!confirm('Delete this mission?')) return;
+      state.missions = state.missions.filter(x => x.id !== m.id);
       await persist();
       renderAll();
     };
-    actions.appendChild(del);
-    row.appendChild(actions);
+    row.appendChild(del);
     log.appendChild(row);
   }
 }
 
-/* =========================
-   Crew / Types / Inventory
-   ========================= */
-function renderCrewList(){
-  const root = $("crewList");
-  root.innerHTML = "";
-  if (!state.crew.length){
-    root.innerHTML = `<div class="item"><div><div class="itemTitle mono">NO CREW</div><div class="itemMeta">Add crew members above.</div></div></div>`;
+/* ═══════════════════════════════════════════════════════════
+   CREW / TYPES / INVENTORY
+═══════════════════════════════════════════════════════════ */
+function renderCrewList() {
+  const root = el('crewList');
+  root.innerHTML = '';
+  if (!state.crew.length) {
+    root.innerHTML = '<div class="list-empty">NO CREW MEMBERS ADDED</div>';
     return;
   }
-  for (const c of state.crew){
-    const row = document.createElement("div");
-    row.className = "item";
+  for (const c of state.crew) {
+    const row = document.createElement('div');
+    row.className = 'list-item';
     row.innerHTML = `
-      <div>
-        <div class="itemTitle">${esc(c.name)} ${c.tag ? `<span class="pill">${esc(c.tag)}</span>` : ""}</div>
-        <div class="itemMeta mono">ID ${esc(c.id.slice(-8))}</div>
+      <div class="item-main">
+        <div class="item-title">
+          ${esc(c.name)}
+          ${c.tag ? `<span class="pill">${esc(c.tag)}</span>` : ''}
+        </div>
+        <div class="item-meta"><span class="mono">ID …${esc(c.id.slice(-8))}</span></div>
       </div>
     `;
-    const actions = document.createElement("div");
-    actions.className = "btnRow";
-    const del = document.createElement("button");
-    del.className = "btn danger";
-    del.textContent = "REMOVE";
-    del.onclick = async ()=>{
-      state.crew = state.crew.filter(x=>x.id!==c.id);
-      for (const m of state.missions){
-        if (m.pilotId===c.id) m.pilotId="";
-        if (m.mcId===c.id) m.mcId="";
-        if (m.copilotId===c.id) m.copilotId="";
-        for (const r of (m.releases||[])){
-          if (r.opPilotId===c.id) r.opPilotId="";
-          if (r.opMcId===c.id) r.opMcId="";
-          if (r.opSensorId===c.id) r.opSensorId="";
+    const del = document.createElement('button');
+    del.className = 'danger';
+    del.textContent = 'REMOVE';
+    del.onclick = async () => {
+      state.crew = state.crew.filter(x => x.id !== c.id);
+      // Clear references
+      for (const m of state.missions) {
+        if (m.pilotId   === c.id) m.pilotId   = '';
+        if (m.mcId      === c.id) m.mcId      = '';
+        if (m.copilotId === c.id) m.copilotId = '';
+        for (const r of m.releases ?? []) {
+          if (r.opPilotId  === c.id) r.opPilotId  = '';
+          if (r.opMcId     === c.id) r.opMcId     = '';
+          if (r.opSensorId === c.id) r.opSensorId = '';
         }
       }
       await persist();
       renderAll();
     };
-    actions.appendChild(del);
-    row.appendChild(actions);
+    row.appendChild(del);
     root.appendChild(row);
   }
 }
 
-function renderTypeList(){
-  const root = $("typeList");
-  root.innerHTML = "";
-  if (!state.types.length){
-    root.innerHTML = `<div class="item"><div><div class="itemTitle mono">NO WEAPON TYPES</div><div class="itemMeta">Add types above (bomb/missile/etc).</div></div></div>`;
+function renderTypeList() {
+  const root = el('typeList');
+  root.innerHTML = '';
+  if (!state.types.length) {
+    root.innerHTML = '<div class="list-empty">NO WEAPON TYPES DEFINED</div>';
     return;
   }
-  for (const t of state.types){
-    const inv = Number(state.inventory[t.id] ?? 0);
-    const row = document.createElement("div");
-    row.className = "item";
+  for (const t of state.types) {
+    const stock = Number(state.inventory[t.id] ?? 0);
+    const row = document.createElement('div');
+    row.className = 'list-item';
     row.innerHTML = `
-      <div>
-        <div class="itemTitle">${esc(t.cat)}: ${esc(t.name)} <span class="pill">STOCK ${inv}</span></div>
-        <div class="itemMeta mono">ID ${esc(t.id.slice(-8))}</div>
+      <div class="item-main">
+        <div class="item-title">
+          ${esc(t.name)}
+          <span class="pill muted">${esc(t.cat)}</span>
+          <span class="pill">STOCK ${stock}</span>
+        </div>
+        <div class="item-meta"><span class="mono">ID …${esc(t.id.slice(-8))}</span></div>
       </div>
     `;
-    const actions = document.createElement("div");
-    actions.className = "btnRow";
-    const del = document.createElement("button");
-    del.className = "btn danger";
-    del.textContent = "REMOVE";
-    del.onclick = async ()=>{
-      state.types = state.types.filter(x=>x.id!==t.id);
+    const del = document.createElement('button');
+    del.className = 'danger';
+    del.textContent = 'REMOVE';
+    del.onclick = async () => {
+      state.types = state.types.filter(x => x.id !== t.id);
       delete state.inventory[t.id];
-      for (const m of state.missions){
-        m.releases = (m.releases||[]).filter(r=>r.typeId!==t.id);
+      for (const m of state.missions) {
+        m.releases = (m.releases ?? []).filter(r => r.typeId !== t.id);
       }
       await persist();
       renderAll();
     };
-    actions.appendChild(del);
-    row.appendChild(actions);
+    row.appendChild(del);
     root.appendChild(row);
   }
 }
 
-function renderInventoryList(){
-  const root = $("invList");
-  root.innerHTML = "";
-  if (!state.types.length){
-    root.innerHTML = `<div class="item"><div><div class="itemTitle mono">NO TYPES</div><div class="itemMeta">Add weapon types first.</div></div></div>`;
+function renderInventoryList() {
+  const root = el('invList');
+  root.innerHTML = '';
+  el('autoDecr').value = state.settings.autoDecr || 'on';
+
+  if (!state.types.length) {
+    root.innerHTML = '<div class="list-empty">ADD WEAPON TYPES FIRST</div>';
     return;
   }
-  for (const t of state.types){
+
+  // Calculate max stock for bar scaling
+  const maxStock = Math.max(1, ...state.types.map(t => Number(state.inventory[t.id] ?? 0)));
+
+  for (const t of state.types) {
     const qty = Number(state.inventory[t.id] ?? 0);
-    const row = document.createElement("div");
-    row.className = "item";
+    const pct = Math.min(100, (qty / maxStock * 100)).toFixed(0);
+    const row = document.createElement('div');
+    row.className = 'inv-row';
     row.innerHTML = `
-      <div>
-        <div class="itemTitle">${esc(t.cat)}: ${esc(t.name)}</div>
-        <div class="itemMeta">Current stock: <span class="mono" style="color:var(--accent); font-weight:800;">${qty}</span></div>
+      <div style="flex:1">
+        <div class="item-title">${esc(t.name)} <span class="pill muted">${esc(t.cat)}</span></div>
       </div>
+      <div class="inv-bar-wrap">
+        <div class="inv-bar"><div class="inv-bar-fill" style="width:${pct}%"></div></div>
+      </div>
+      <div class="mono accent" style="font-size:16px; min-width:36px; text-align:right">${qty}</div>
     `;
     root.appendChild(row);
   }
-  $("autoDecr").value = state.settings.autoDecr || "on";
 }
 
-/* =========================
-   CSV Export (Excel)
-   ========================= */
-function csvEscape(v){
-  const s = String(v ?? "");
-  if (/[,"\n]/.test(s)) return `"${s.replace(/"/g,'""')}"`;
-  return s;
-}
-
-function downloadText(filename, text, mime="text/plain"){
-  const blob = new Blob([text], { type: mime });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-function exportMissionsXLSX(){
-  if (!window.XLSX) return alert("SheetJS not loaded. Make sure ./xlsx.full.min.js exists.");
-
-  // ---------- Flatten data ----------
-  const missionsRows = state.missions.map(m => {
-    const relCount = (m.releases || []).reduce((a,r)=>a+(Number(r.qty)||0),0);
-    const hitQty  = (m.releases || []).filter(r=>r.state==="Hit").reduce((a,r)=>a+(Number(r.qty)||0),0);
-    const missQty = (m.releases || []).filter(r=>r.state==="Miss").reduce((a,r)=>a+(Number(r.qty)||0),0);
-    const dudQty  = (m.releases || []).filter(r=>r.state==="Dud").reduce((a,r)=>a+(Number(r.qty)||0),0);
-
-    return {
-      "Mission ID": m.id,
-      "Mission Date/Time (UTC)": m.dtISO,
-      "Tail Number": m.tailNumber || "",
-      "Pilot": nameById(state.crew, m.pilotId),
-      "Mission Commander": nameById(state.crew, m.mcId),
-      "Co-Pilot": nameById(state.crew, m.copilotId),
-      "Total Released": relCount,
-      "Hit (qty)": hitQty,
-      "Miss (qty)": missQty,
-      "Dud (qty)": dudQty,
-      "Notes": m.notes || ""
-    };
-  });
-
-  const releasesRows = [];
-  for (const m of state.missions){
-    for (const r of (m.releases || [])){
-      const t = state.types.find(x=>x.id===r.typeId);
-      releasesRows.push({
-        "Mission ID": m.id,
-        "Mission Date/Time (UTC)": m.dtISO,
-        "Tail Number": m.tailNumber || "",
-        "Weapon Category": t ? t.cat : "",
-        "Weapon Type": t ? t.name : "",
-        "Quantity": Number(r.qty||0),
-        "State": r.state || "",
-        "Op Pilot": nameById(state.crew, r.opPilotId),
-        "Op Mission Commander": nameById(state.crew, r.opMcId),
-        "Op Sensor Operator": nameById(state.crew, r.opSensorId),
-        "Release ID": r.id
-      });
-    }
-  }
-
-  // ---------- Totals (Report) ----------
-  const totalFired = releasesRows.reduce((a,x)=>a+(Number(x["Quantity"])||0),0);
-  const totalHit   = releasesRows.filter(x=>x["State"]==="Hit").reduce((a,x)=>a+(Number(x["Quantity"])||0),0);
-  const totalMiss  = releasesRows.filter(x=>x["State"]==="Miss").reduce((a,x)=>a+(Number(x["Quantity"])||0),0);
-  const totalDud   = releasesRows.filter(x=>x["State"]==="Dud").reduce((a,x)=>a+(Number(x["Quantity"])||0),0);
-
-  const reportRows = [
-    { "Metric": "Total Fired", "Value": totalFired },
-    { "Metric": "Total Hit",   "Value": totalHit },
-    { "Metric": "Total Miss",  "Value": totalMiss },
-    { "Metric": "Total Dud",   "Value": totalDud },
-    { "Metric": "Exported At (Local)", "Value": new Date().toLocaleString() },
-    { "Metric": "App Version", "Value": APP_VERSION }
+/* ═══════════════════════════════════════════════════════════
+   EXPORTS
+═══════════════════════════════════════════════════════════ */
+function exportMissionsSummaryCSV() {
+  const headers = [
+    'MissionNo','MissionID','MissionDateTime','TakeoffTime','LandingTime',
+    'TailNumber','Pilot','MissionCommander','CoPilot',
+    'TotalFired','Hit','Miss','Dud','WeaponSummary','Notes'
   ];
-
-  // ---------- Build workbook ----------
-  const wb = XLSX.utils.book_new();
-  const wsMissions  = XLSX.utils.json_to_sheet(missionsRows, { skipHeader:false });
-  const wsReleases  = XLSX.utils.json_to_sheet(releasesRows, { skipHeader:false });
-  const wsReport    = XLSX.utils.json_to_sheet(reportRows, { skipHeader:false });
-
-  XLSX.utils.book_append_sheet(wb, wsReport,   "Report");
-  XLSX.utils.book_append_sheet(wb, wsMissions, "Missions");
-  XLSX.utils.book_append_sheet(wb, wsReleases, "Releases");
-
-  // ---------- Formatting helpers ----------
-  function setCols(ws, widths){ ws["!cols"] = widths.map(w => ({ wch: w })); }
-  function addAutoFilter(ws){
-    const ref = ws["!ref"]; if (!ref) return;
-    const range = XLSX.utils.decode_range(ref);
-    ws["!autofilter"] = { ref: XLSX.utils.encode_range({ s:{r:0,c:0}, e:{r:range.e.r,c:range.e.c} }) };
-  }
-  function freezeHeader(ws){ ws["!freeze"] = { xSplit: 0, ySplit: 1 }; }
-
-  // Apply formatting (these work in Community)
-  setCols(wsReport,   [28, 26]); addAutoFilter(wsReport);   freezeHeader(wsReport);
-  setCols(wsMissions, [18, 24, 14, 18, 22, 16, 14, 10, 10, 10, 36]); addAutoFilter(wsMissions); freezeHeader(wsMissions);
-  setCols(wsReleases, [18, 24, 14, 18, 22, 10, 10, 18, 22, 22, 18]); addAutoFilter(wsReleases); freezeHeader(wsReleases);
-
-  // ---------- Export ----------
-  const fileName = `Tactical_Mission_Log_v${APP_VERSION}.xlsx`;
-  XLSX.writeFile(wb, fileName);
+  const rows = state.missions.slice().reverse().map((m, i) => {
+    let fired = 0, hit = 0, miss = 0, dud = 0;
+    const parts = [];
+    for (const r of m.releases ?? []) {
+      const q = Number(r.qty || 0);
+      fired += q;
+      if (r.state === 'Hit')  hit  += q;
+      if (r.state === 'Miss') miss += q;
+      if (r.state === 'Dud')  dud  += q;
+      const t = typeById(r.typeId);
+      parts.push(`${t?.name ?? 'UNK'} x${q} (${r.state})`);
+    }
+    return [
+      String(i+1).padStart(3,'0'), m.id, m.dtISO,
+      m.takeoffISO ?? '', m.landingISO ?? '', m.tailNumber ?? '',
+      nameById(m.pilotId), nameById(m.mcId), nameById(m.copilotId),
+      fired, hit, miss, dud, parts.join(' | '), m.notes ?? ''
+    ].map(csvEsc).join(',');
+  });
+  download('missions_summary.csv', [headers.map(csvEsc).join(','), ...rows].join('\n'), 'text/csv');
 }
 
-function exportInventoryCSV(){
-  const headers = ["WeaponTypeID","WeaponCategory","WeaponType","Stock"];
-  let lines = [headers.map(csvEscape).join(",")];
-  for (const t of state.types){
-    lines.push([t.id, t.cat, t.name, Number(state.inventory[t.id] ?? 0)].map(csvEscape).join(","));
-  }
-  downloadText("inventory.csv", lines.join("\n"), "text/csv");
+function exportWeaponsDetailCSV() {
+  const headers = [
+    'MissionNo','MissionID','MissionDateTime','TakeoffTime','LandingTime','TailNumber',
+    'WeaponCategory','WeaponType','Quantity','WeaponState',
+    'OpPilot','OpMissionCommander','OpSensorOperator'
+  ];
+  const rows = [];
+  state.missions.slice().reverse().forEach((m, i) => {
+    const no = String(i+1).padStart(3,'0');
+    const rels = m.releases ?? [];
+    if (!rels.length) {
+      rows.push([no,m.id,m.dtISO,m.takeoffISO??'',m.landingISO??'',m.tailNumber??'','','','','','','',''].map(csvEsc).join(','));
+    }
+    for (const r of rels) {
+      const t = typeById(r.typeId);
+      rows.push([
+        no, m.id, m.dtISO, m.takeoffISO??'', m.landingISO??'', m.tailNumber??'',
+        t?.cat??'', t?.name??'', r.qty, r.state,
+        nameById(r.opPilotId), nameById(r.opMcId), nameById(r.opSensorId)
+      ].map(csvEsc).join(','));
+    }
+  });
+  download('missions_weapons.csv', [headers.map(csvEsc).join(','), ...rows].join('\n'), 'text/csv');
 }
 
-function exportEncryptedBackup(){
-  const meta = getMeta();
-  const data = getEncryptedData();
-  downloadText("tactical-mission-log.encrypted.json", JSON.stringify({ meta, data }, null, 2), "application/json");
+function exportInventoryCSV() {
+  const headers = ['WeaponTypeID','WeaponCategory','WeaponType','Stock'];
+  const rows = state.types.map(t =>
+    [t.id, t.cat, t.name, Number(state.inventory[t.id] ?? 0)].map(csvEsc).join(',')
+  );
+  download('inventory.csv', [headers.map(csvEsc).join(','), ...rows].join('\n'), 'text/csv');
 }
 
-/* =========================
-   Render All
-   ========================= */
-function renderViews(){
-  for (const t of TABS){
-    show(document.getElementById(`view_${t.id}`), activeTab===t.id);
-  }
+function exportEncryptedBackup() {
+  const meta = loadMeta();
+  const data = loadEncData();
+  download('tml-backup.encrypted.json', JSON.stringify({ meta, data }, null, 2), 'application/json');
 }
 
-function renderDropdowns(){
-  // Role-filtered selectors
-  fillCrewSelectByRole($("pilotSel"), "Pilot", true, "(select pilot)");
-  fillCrewSelectByRole($("mcSel"), "Mission Commander", true, "(select MC)");
-  fillCrewSelectByRole($("copilotSel"), "Co-Pilot", true, "(none)");
-
-  fillTypeSelect($("relTypeSel"), true);
-  fillCrewSelectByRole($("relPilotSel"), "Pilot", true, "(pilot)");
-  fillCrewSelectByRole($("relMcSel"), "Mission Commander", true, "(MC)");
-  fillCrewSelectByRole($("relSensorSel"), "Sensor Operator", true, "(sensor)");
-
-  fillTypeSelect($("invTypeSel"), true);
+/* ═══════════════════════════════════════════════════════════
+   PASSWORD STRENGTH
+═══════════════════════════════════════════════════════════ */
+function passwordStrength(p) {
+  let score = 0;
+  if (p.length >= 8)  score++;
+  if (p.length >= 12) score++;
+  if (/[A-Z]/.test(p) && /[a-z]/.test(p)) score++;
+  if (/[0-9]/.test(p)) score++;
+  if (/[^A-Za-z0-9]/.test(p)) score++;
+  return score; // 0-5
 }
 
-function renderAll(){
+el('newPass').addEventListener('input', () => {
+  const s = passwordStrength(el('newPass').value);
+  const fill = el('strengthFill');
+  fill.style.width = (s / 5 * 100) + '%';
+  fill.style.background = ['#ff4444','#ff8800','#ffcc00','#88dd44','#6dff9a'][Math.min(4, Math.max(0, s-1))] || '#ff4444';
+});
+
+/* ═══════════════════════════════════════════════════════════
+   RENDER ALL
+═══════════════════════════════════════════════════════════ */
+function renderAll() {
   renderTabs();
   renderViews();
-  renderKPIs();
+  renderStatus();
   renderDropdowns();
   renderReleaseDraft();
   renderMissionLog();
@@ -978,92 +1735,106 @@ function renderAll(){
   renderInventoryList();
 }
 
-/* =========================
-   App Actions
-   ========================= */
-document.getElementById("addCrewBtn").onclick = async ()=>{
-  const name = $("crewName").value.trim();
-  const tag = $("crewRoleTag").value;
-  if (!name) return alert("Enter crew name/callsign.");
-  if (!tag) return alert("Select a role tag (Pilot/MC/Co-Pilot/Sensor).");
+/* ═══════════════════════════════════════════════════════════
+   EVENT HANDLERS
+═══════════════════════════════════════════════════════════ */
+
+/* — CREW — */
+el('addCrewBtn').onclick = async () => {
+  const name = el('crewName').value.trim();
+  const tag  = el('crewRoleTag').value;
+  if (!name) return alert('Enter a name or callsign.');
+  if (state.crew.some(c => c.name.toLowerCase() === name.toLowerCase()))
+    return alert('A crew member with that name already exists.');
   state.crew.unshift({ id: uid(), name, tag });
-  $("crewName").value = "";
-  $("crewRoleTag").value = "";
+  el('crewName').value = '';
+  el('crewRoleTag').value = '';
   await persist();
   renderAll();
 };
 
-document.getElementById("addTypeBtn").onclick = async ()=>{
-  const name = $("typeName").value.trim();
-  const cat = $("typeCat").value;
-  if (!name) return alert("Enter weapon type name.");
+/* — WEAPON TYPES — */
+el('addTypeBtn').onclick = async () => {
+  const name = el('typeName').value.trim();
+  const cat  = el('typeCat').value;
+  if (!name) return alert('Enter a weapon type name.');
+  if (state.types.some(t => t.name.toLowerCase() === name.toLowerCase()))
+    return alert('That weapon type already exists.');
   state.types.unshift({ id: uid(), name, cat });
-  $("typeName").value = "";
-  $("typeCat").value = "Missile";
+  el('typeName').value = '';
   await persist();
   renderAll();
 };
 
-document.getElementById("setInvBtn").onclick = async ()=>{
-  const typeId = $("invTypeSel").value;
-  const qty = Math.max(0, Number($("invQty").value || 0));
-  if (!typeId) return alert("Select weapon type.");
+/* — INVENTORY — */
+el('setInvBtn').onclick = async () => {
+  const typeId = el('invTypeSel').value;
+  const qty    = Math.max(0, parseInt(el('invQty').value, 10) || 0);
+  if (!typeId) return alert('Select a weapon type.');
   state.inventory[typeId] = qty;
   await persist();
   renderAll();
 };
 
-document.getElementById("autoDecr").onchange = async ()=>{
-  state.settings.autoDecr = $("autoDecr").value;
+el('autoDecr').onchange = async () => {
+  state.settings.autoDecr = el('autoDecr').value;
   await persist();
 };
 
-document.getElementById("addReleaseBtn").onclick = ()=>{
-  const typeId = $("relTypeSel").value;
-  const qty = Math.max(1, Number($("relQty").value || 1));
-  const stateVal = $("relState").value || "Hit";
-  const opPilotId = $("relPilotSel").value;
-  const opMcId = $("relMcSel").value;
-  const opSensorId = $("relSensorSel").value;
+/* — ADD RELEASE — */
+el('addReleaseBtn').onclick = () => {
+  const typeId    = el('relTypeSel').value;
+  const qty       = Math.max(1, parseInt(el('relQty').value, 10) || 1);
+  const stateVal  = el('relState').value || 'Hit';
+  const opPilotId = el('relPilotSel').value;
+  const opMcId    = el('relMcSel').value;
+  const opSensorId= el('relSensorSel').value;
 
-  if (!typeId) return alert("Select weapon type.");
-  if (!opPilotId && !opMcId && !opSensorId) return alert("Select at least one operator (pilot/mc/sensor).");
+  if (!typeId) return alert('Select a weapon type.');
+  if (!opPilotId && !opMcId && !opSensorId)
+    return alert('Select at least one operator (Pilot, MC, or Sensor).');
 
-  missionDraftReleases.unshift({ id: uid(), typeId, qty, state: stateVal, opPilotId, opMcId, opSensorId });
+  draftReleases.unshift({ id: uid(), typeId, qty, state: stateVal, opPilotId, opMcId, opSensorId });
   renderReleaseDraft();
 };
 
-document.getElementById("saveMissionBtn").onclick = async ()=>{
-  const dt = $("missionDT").value;
-  const tailNumber = $("tailNumber").value.trim();
-  const pilotId = $("pilotSel").value;
-  const mcId = $("mcSel").value;
-  const copilotId = $("copilotSel").value;
-  const notes = $("missionNotes").value.trim();
+/* — SAVE MISSION — */
+el('saveMissionBtn').onclick = async () => {
+  const dt        = el('missionDT').value;
+  const takeoff   = el('takeoffDT').value;
+  const landing   = el('landingDT').value;
+  const tailNumber= el('tailNumber').value.trim();
+  const pilotId   = el('pilotSel').value;
+  const mcId      = el('mcSel').value;
+  const copilotId = el('copilotSel').value;
+  const notes     = el('missionNotes').value.trim();
 
-  if (!dt) return alert("Set mission date/time.");
-  if (!tailNumber) return alert("Enter tail number.");
-  if (!pilotId) return alert("Select Pilot.");
-  if (!mcId) return alert("Select Mission Commander.");
+  if (!dt)      return alert('Set mission date/time.');
+  if (!pilotId) return alert('Select a Pilot.');
+  if (!mcId)    return alert('Select a Mission Commander.');
 
-  const dtISO = new Date(dt).toISOString();
+  // Validate takeoff/landing ordering
+  if (takeoff && landing && new Date(landing) < new Date(takeoff))
+    return alert('Landing time cannot be before takeoff time.');
 
-  if ((state.settings.autoDecr || "on") === "on"){
-    for (const r of missionDraftReleases){
+  if (state.settings.autoDecr === 'on') {
+    for (const r of draftReleases) {
       const cur = Number(state.inventory[r.typeId] ?? 0);
-      state.inventory[r.typeId] = Math.max(0, cur - Number(r.qty||0));
+      state.inventory[r.typeId] = Math.max(0, cur - Number(r.qty || 0));
     }
   }
 
   state.missions.unshift({
     id: uid(),
-    dtISO,
+    dtISO:      new Date(dt).toISOString(),
+    takeoffISO: takeoff  ? new Date(takeoff).toISOString()  : '',
+    landingISO: landing  ? new Date(landing).toISOString()  : '',
     tailNumber,
     pilotId,
     mcId,
     copilotId,
     notes,
-    releases: missionDraftReleases
+    releases: [...draftReleases]
   });
 
   await persist();
@@ -1071,75 +1842,124 @@ document.getElementById("saveMissionBtn").onclick = async ()=>{
   renderAll();
 };
 
-document.getElementById("clearMissionBtn").onclick = ()=>{ clearMissionForm(); };
+el('clearMissionBtn').onclick = () => clearMissionForm();
 
-document.getElementById("exportMissionsBtn").onclick = exportMissionsXLSX;
-document.getElementById("exportInventoryBtn").onclick = exportInventoryCSV;
-document.getElementById("exportEncryptedBtn").onclick = exportEncryptedBackup;
+/* — EXPORTS — */
+el('exportSummaryBtn').onclick   = exportMissionsSummaryCSV;
+el('exportWeaponsBtn').onclick   = exportWeaponsDetailCSV;
+el('exportInventoryBtn').onclick  = exportInventoryCSV;
+el('exportEncryptedBtn').onclick  = exportEncryptedBackup;
 
-document.getElementById("lockBtn").onclick = ()=>{
+/* — SESSION — */
+el('lockBtn').onclick = () => {
   vaultKey = null;
-  show(document.getElementById("appRoot"), false);
-  show(document.getElementById("unlockCard"), true);
+  state = EMPTY_STATE();
+  show('appRoot', false);
+  el('tabs').style.display = 'none';
+  el('statusBadge').textContent = 'LOCKED';
+  show('unlockWrap');
 };
 
-document.getElementById("wipeBtn").onclick = ()=>{
-  const ok = confirm("WIPE ALL DEVICE DATA? This cannot be undone.");
-  if (!ok) return;
+el('wipeBtn').onclick = () => {
+  if (!confirm('WIPE ALL DATA? This is permanent and cannot be undone.')) return;
   localStorage.removeItem(META_KEY);
   localStorage.removeItem(DATA_KEY);
   location.reload();
 };
 
-/* =========================
-   Boot: Setup / Unlock
-   ========================= */
-function bootMode(){
-  const meta = getMeta();
-  show(document.getElementById("setupCard"), !meta);
-  show(document.getElementById("unlockCard"), !!meta);
-  show(document.getElementById("appRoot"), false);
-  renderTabs();
-}
+/* ═══════════════════════════════════════════════════════════
+   AUTH HANDLERS
+═══════════════════════════════════════════════════════════ */
+el('createBtn').onclick = async () => {
+  const p1 = el('newPass').value;
+  const p2 = el('newPass2').value;
+  const errEl = el('setupErr');
 
-document.getElementById("createBtn").onclick = async ()=>{
-  const p1 = $("newPass").value;
-  const p2 = $("newPass2").value;
-  if (!p1 || p1.length < 4) return alert("Use at least 4 characters.");
-  if (p1 !== p2) return alert("Passwords do not match.");
-  await createVault(p1);
-  $("newPass").value = "";
-  $("newPass2").value = "";
-  show(document.getElementById("setupCard"), false);
-  show(document.getElementById("unlockCard"), false);
-  show(document.getElementById("appRoot"), true);
+  if (p1.length < 8) {
+    errEl.textContent = '⚠ Use at least 8 characters.';
+    errEl.classList.remove('hidden');
+    return;
+  }
+  if (p1 !== p2) {
+    errEl.textContent = '⚠ Passwords do not match.';
+    errEl.classList.remove('hidden');
+    return;
+  }
+  errEl.classList.add('hidden');
 
-  $("missionDT").value = new Date(Date.now() - new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);
-  renderAll();
-};
+  const btn = el('createBtn');
+  btn.disabled = true;
+  btn.textContent = 'GENERATING KEY…';
 
-document.getElementById("unlockBtn").onclick = async ()=>{
-  $("unlockErr").textContent = "";
-  const pw = $("pass").value;
-  try{
-    const res = await unlock(pw);
-    vaultKey = res.key;
-    state = res.data;
-    $("pass").value = "";
-    show(document.getElementById("unlockCard"), false);
-    show(document.getElementById("setupCard"), false);
-    show(document.getElementById("appRoot"), true);
-
-    if (!$("missionDT").value){
-      $("missionDT").value = new Date(Date.now() - new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);
-    }
-    renderAll();
-  }catch(e){
-    $("unlockErr").textContent = "Wrong password (or vault corrupted).";
+  try {
+    await createVault(p1);
+    el('newPass').value = '';
+    el('newPass2').value = '';
+    show('setupWrap', false);
+    launchApp();
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'INITIALIZE VAULT';
   }
 };
 
-bootMode();
+el('unlockBtn').onclick = async () => {
+  const pw    = el('passInput').value;
+  const errEl = el('unlockErr');
+  errEl.classList.add('hidden');
+
+  const btn = el('unlockBtn');
+  btn.disabled = true;
+  btn.textContent = 'DECRYPTING…';
+
+  try {
+    await openVault(pw);
+    el('passInput').value = '';
+    show('unlockWrap', false);
+    launchApp();
+  } catch {
+    errEl.classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'UNLOCK';
+  }
+};
+
+/* Enter key on password fields */
+['passInput'].forEach(id => {
+  el(id)?.addEventListener('keydown', e => { if (e.key === 'Enter') el('unlockBtn').click(); });
+});
+['newPass2'].forEach(id => {
+  el(id)?.addEventListener('keydown', e => { if (e.key === 'Enter') el('createBtn').click(); });
+});
+
+/* ═══════════════════════════════════════════════════════════
+   LAUNCH
+═══════════════════════════════════════════════════════════ */
+function launchApp() {
+  el('statusBadge').textContent = 'ONLINE';
+  show('appRoot', true);
+
+  const now = nowLocal();
+  if (!el('missionDT').value)  el('missionDT').value  = now;
+  if (!el('takeoffDT').value)  el('takeoffDT').value  = now;
+  if (!el('landingDT').value)  el('landingDT').value  = now;
+
+  startClock();
+  renderAll();
+}
+
+function boot() {
+  const meta = loadMeta();
+  if (!meta) {
+    show('setupWrap');
+  } else {
+    show('unlockWrap');
+  }
+}
+
+boot();
 </script>
+
 </body>
 </html>
